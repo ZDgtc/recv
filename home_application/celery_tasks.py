@@ -65,9 +65,10 @@ def execute_check_ip_task():
 @task()
 def execute_check_service(client, bk_biz_id):
     openstackcloud = OpenStackCloud()
-    compute_service_down = openstackcloud.get_compute_service_status()
+    compute_services_down = openstackcloud.get_compute_service_status()
     network_agents_down = openstackcloud.get_network_agents_status()
-    for item in compute_service_down:
+    cinderv3_services_down = openstackcloud.get_cinderv3_service_status()
+    for item in compute_services_down:
         service = item['service']
         service_ip = item['ip']
         script_content = base64.b64encode(
@@ -85,6 +86,19 @@ def execute_check_service(client, bk_biz_id):
         result, instance_id = get_job_instance_id(client, bk_biz_id, agent_ip, script_content)
         if result:
             logger.error(u"{}上的{}状态为down，重启服务".format(agent_ip, agent))
+    for item in cinderv3_services_down:
+        service = item['service']
+        service_ip = item['ip']
+        script_content = base64.b64encode(
+            "systemctl restart " + service
+        )
+        result, instance_id = get_job_instance_id(client, bk_biz_id, service_ip, script_content)
+        if result:
+            logger.error(u"{}上的{}状态为down，重启服务".format(service_ip, service))
+
+@task()
+def execute_check_hypervisor():
+    pass
 
 
 @periodic_task(run_every=crontab(minute='*/1', hour='*', day_of_week="*"))
@@ -100,3 +114,10 @@ def check_compute_service():
     execute_check_service.apply_async(args=[client, 4])
     now = datetime.datetime.now()
     logger.error(u'开始调用check_service周期任务，当前时间：{}'.format(now))
+
+
+@periodic_task(run_every=crontab(minute='*/1', hour='*', day_of_week="*"))
+def check_hypervisor():
+    execute_check_hypervisor.apply_async()
+    now = datetime.datetime.now()
+    logger.error(u"开始调用check_ip周期任务，当前时间：{}".format(now))

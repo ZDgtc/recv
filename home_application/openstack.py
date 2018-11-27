@@ -38,10 +38,13 @@ class OpenStackCloud(object):
         self.catalog, self.token = self.get_token()
         self.nova_endpoints_list = [url for url in self.catalog if url["name"] == "nova"][0]["endpoints"]
         self.neutron_endpoints_list = [url for url in self.catalog if url["name"] == "neutron"][0]["endpoints"]
+        self.cinderv3_endpoints_list = [url for url in self.catalog if url["name"] == "cinderv3"][0]["endpoints"]
         self.nova_url = \
             [endpoint for endpoint in self.nova_endpoints_list if endpoint["interface"] == "public"][0]["url"]
         self.neutron_url = \
             [endpoint for endpoint in self.neutron_endpoints_list if endpoint["interface"] == "public"][0]["url"]
+        self.cinderv3_url = \
+            [endpoint for endpoint in self.cinderv3_endpoints_list if endpoint["interface"] == "public"][0]["url"]
 
     def get_conf(self):
         """
@@ -107,6 +110,8 @@ class OpenStackCloud(object):
             url = self.nova_url + suffix
         elif service is 'neutron':
             url = self.neutron_url + suffix
+        elif service is 'cinderv3':
+            url = self.cinderv3_url + suffix
         else:
             raise Exception('请提供服务类型')
         if headers is None:
@@ -146,6 +151,18 @@ class OpenStackCloud(object):
         agents_down = [{'ip': socket.gethostbyname(agent['host']), 'agent': agent['binary']} for agent in agents
                        if agent['alive'] is False]
         return agents_down
+
+    def get_cinderv3_service_status(self):
+        suffix = '/os-services'
+        services = self.get_resp(service='cinderv3', suffix=suffix, method='get')['services']
+        services_down = []
+        for service in services:
+            host = service['host']
+            if service['binary'] == 'cinder-volume':
+                host = host[:host.index('@')]
+            if service['state'] == 'down' and service['status'] == 'enabled':
+                services_down.append({'ip': socket.gethostbyname(host), 'service': 'openstack-' + service['binary']})
+        return services_down
 
     def locate_server_by_ip(self, server_ip):
         """根据server IP定位需要操作的server id，此处忽略了网络重叠，请不要为云主机挂载两个相同的IP！"""
