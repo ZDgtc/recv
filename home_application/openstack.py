@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import sys
 import os
 import requests
 import logging
 from ConfigParser import ConfigParser
 import socket
+from models import IpList
+import datetime
 
 
 DEVNULL = open(os.devnull, 'wb')
@@ -27,7 +28,7 @@ logging.getLogger('').addHandler(console)
 
 class OpenStackCloud(object):
     def __init__(self):
-        conffile = "/data/openstack.conf"
+        conffile = "/data/recv/openstack.conf"
         headers = {}
         headers["Content-Type"] = "application/json"
         self.cf = ConfigParser()
@@ -178,6 +179,16 @@ class OpenStackCloud(object):
                         logging.critical(msg)
                         logging.critical(e)
 
+    def get_ip_by_server_id(self, server_id):
+        suffix = "/servers/%s" % server_id
+        server = self.get_resp(service='nova', suffix=suffix, method="get")['server']
+        for network, subnets in server["addresses"].items():
+                for subnet in subnets:
+                    server_ip = subnet["addr"]
+                    if IpList.objects.filter(ip=server_ip) is not None:
+                        return server_ip
+        return None
+
     def reboot_server(self, server_ip, reboot_hard=True):
         """
         重启云主机
@@ -278,3 +289,12 @@ class OpenStackCloud(object):
             msg = "Fail to set service status on hypervisor %s." % hypervisor_ip
             logging.critical(msg)
             logging.critical(e)
+
+    def add_server_ip_list(self):
+        servers = self.get_resp(service='nova', suffix="/servers/detail", params='', method="get")['servers']
+        for server in servers:
+            ip = server['addresses'].values()[0][0]['addr']
+            if len(IpList.objects.filter(ip=ip)) == 0:
+                IpList.objects.create(ip=ip, type='vm', last_alive_time=datetime.datetime.now(), last_reboot_time=datetime.datetime.now()-datetime.timedelta(minutes=1))
+
+

@@ -14,7 +14,24 @@ from django.db import models
 
 class IpList(models.Model):
     ip = models.CharField(max_length=64)
-    auto_reboot = models.BooleanField(default=False)
-    last_alive_time = models.DateTimeField()
-    last_reboot_time = models.DateTimeField()
+    type = models.CharField(max_length=10)
+    last_alive_time = models.DateTimeField(blank=True, null=True)
+    last_reboot_time = models.DateTimeField(blank=True, null=True)
+
+
+class Alarm(models.Model):
+    ip = models.CharField(max_length=64)
+    type = models.CharField(max_length=64)
+    alarm_time = models.DateTimeField()
+    alarm_content = models.TextField()
+    alarm_level = models.CharField(max_length=32)
+    recv_time = models.DateTimeField(null=True, blank=True)
+    recv_result = models.CharField(max_length=32)
+
+
+class Recv(models.Model):
+    ip = models.CharField(max_length=64)
+    celery_opra_time = models.DateTimeField()
+    celery_opra_content = models.TextField()
+
 
