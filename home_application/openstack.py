@@ -11,7 +11,7 @@ import datetime
 
 
 DEVNULL = open(os.devnull, 'wb')
-logfile = "/var/log/OpenStack_Operator.log"
+logfile = "/data/recv/OpenStack_Operator.log"
 debug = True
 
 level = logging.WARNING if not debug else logging.DEBUG
