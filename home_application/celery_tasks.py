@@ -97,7 +97,7 @@ def execute_check_ip_task():
                         continue
                     # 第N次处理告警，告警超过容忍时间，执行重启
                     if (now - last_alarm.alarm_time).seconds > host.ignore_seconds and (now - host.last_reboot_time).seconds > 170:
-                        logger.error(u"进入第三个循环")
+                        logger.error(u"虚拟机 {} ping不可达超过容忍时间，执行重启".format(ip))
                         res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                         if res:
                             logger.error(u"虚拟机 {} 已重启".format(ip))
@@ -106,13 +106,15 @@ def execute_check_ip_task():
                         last_alarm.recv_time = now
                         last_alarm.recv_result = 'healed'
                         last_alarm.save()
+                    if (now - last_alarm.alarm_time).seconds < host.ignore_seconds:
+                        logger.error(u"虚拟机 {} ping不可达未超过容忍时间，收敛".format(ip))
                 # 无告警记录，创建记录
                 else:
                     Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now, alarm_content="ping不可达",alarm_level="important")
                     logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
             # 若为计算节点，做以下处理
             elif host.type == 'hypervisor':
-                logger.error(u"计算节点{}无法ping通".format(ip))
+                logger.error(u"计算节点 {} 无法ping通".format(ip))
                 alarm_records = Alarm.objects.filter(ip=host.ip)
                 if len(alarm_records) != 0:
                     last_alarm = alarm_records.order_by('-id')[0]
@@ -121,13 +123,15 @@ def execute_check_ip_task():
                     elif (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
                         vms = openstackcloud.get_servers_on_hypervisor(ip)
                         openstackcloud.set_service_status(ip, force_down='true')
+                        logger.error(u"计算节点{}无法ping通，开始执行疏散".format(ip))
                         for vm in vms:
                             openstackcloud.evacuate(vm)
                             vm_ip = openstackcloud.get_ip_by_server_id(vm)
                             if vm_ip is not None:
-                                logger.error(u"虚拟机{}已被疏散，重置重启时间间隔".format(vm_ip))
-                                IpList.objects.filter(ip=vm_ip)[0].update(last_reboot_time=now)
-                            logger.error(u"计算节点{}无法ping通，已执行疏散".format(ip))
+                                logger.error(u"虚拟机 {} 已被疏散".format(vm_ip))
+                                vm_host = IpList.objects.filter(ip=vm_ip)[0]
+                                vm_host.last_reboot_time=now
+                                vm_host.save()
     logger.error(u"check_ip周期任务执行完成，当前时间：{}".format(now))
 
 
