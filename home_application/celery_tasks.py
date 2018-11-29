@@ -66,7 +66,7 @@ def execute_check_ip_task():
                 logger.error(u"虚拟机{}无法ping通持续时间: {}".format(ip, dead_time_delay))
                 reboot_time_delay = (datetime.datetime.now() - host.last_reboot_time).seconds
                 logger.error(u"虚拟机{}重启间隔时间: {}".format(ip, reboot_time_delay))
-                if dead_time_delay > 120 and reboot_time_delay > 180:
+                if dead_time_delay > 118 and reboot_time_delay > 178:
                     openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                     IpList.objects.filter(ip=ip).update(last_reboot_time=datetime.datetime.now())
                     logger.error(u"虚拟机{}超时无法ping通，已执行重启" .format(ip))
@@ -74,15 +74,16 @@ def execute_check_ip_task():
             elif host.type == 'hypervisor':
                 logger.error(u"计算节点{}无法ping通".format(ip))
                 dead_time_delay = (datetime.datetime.now() - host.last_alive_time).seconds
-                if dead_time_delay > 120:
+                if dead_time_delay > 118:
                     vms = openstackcloud.get_servers_on_hypervisor(ip)
                     openstackcloud.set_service_status(ip, force_down='true')
                     for vm in vms:
                         openstackcloud.evacuate(vm)
                         vm_ip = openstackcloud.get_ip_by_server_id(vm)
                         if vm_ip is not None:
+                            logger.error(u"虚拟机{}已被疏散，重置重启时间间隔".format(vm_ip))
                             IpList.objects.filter(ip=vm_ip).update(last_reboot_time=datetime.datetime.now())
-                    logger.error(u"计算节点{}无法ping通，已执行疏散")
+                    logger.error(u"计算节点{}无法ping通，已执行疏散".format(ip))
                 continue
         IpList.objects.filter(ip=ip).update(last_alive_time=datetime.datetime.now())
     now = datetime.datetime.now()

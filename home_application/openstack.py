@@ -122,13 +122,9 @@ class OpenStackCloud(object):
 
         """获取requests方法"""
         req = getattr(requests, method)
-        try:
-            res = req(url, data=data, headers=headers, params=params, verify=False)
-            logging.debug("Request url: %s" % res.url)
-        except Exception as e:
-            msg = "Fail to %s %s data: %s headers: %s" % (method, suffix, data, headers)
-            logging.critical(msg)
-            logging.critical(e)
+
+        res = req(url, data=data, headers=headers, params=params, verify=False)
+        logging.debug("Request url: %s" % res.url)
 
         """token过期，重新获取"""
         if res.status_code == 401:

@@ -10,11 +10,12 @@ See the License for the specific language governing permissions and limitations 
 """
 
 from common.mymako import render_mako_context
-from celery_tasks import add_ip
+from celery_tasks import execute_add_ip
 import os
 import subprocess
 import datetime
 
 
 def openstack(request):
-    add_ip.delay()
+    execute_add_ip.delay()
+    return 'Done'
