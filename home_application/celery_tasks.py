@@ -61,22 +61,20 @@ def execute_check_ip_task():
         ip = tmp[:tmp.index('is') - 1]
         if 'unreachable' in tmp:
             host = IpList.objects.filter(ip=ip)[0]
-            print host.type
-            print host.values('type')
-            if host.values('type') == 'vm':
+            if host.type == 'vm':
                 logger.error(u"虚拟机{}无法ping通".format(ip))
-                dead_time_delay = (datetime.datetime.now() - host.values('last_alive_time')).seconds
+                dead_time_delay = (datetime.datetime.now() - host.last_alive_time).seconds
                 logger.error(u"虚拟机{}无法ping通持续时间: {}".format(ip, dead_time_delay))
-                reboot_time_delay = (datetime.datetime.now() - host.values('last_reboot_time')).seconds
+                reboot_time_delay = (datetime.datetime.now() - host.last_reboot_time).seconds
                 logger.error(u"虚拟机{}重启间隔时间: {}".format(ip, reboot_time_delay))
                 print
                 if dead_time_delay > 120 and reboot_time_delay > 180:
                     openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                     IpList.objects.filter(ip=ip).update(last_reboot_time=datetime.datetime.now())
                     logger.error(u"虚拟机{}超时无法ping通，已执行重启" .format(ip))
-            elif host.values('type') == 'hypervisor':
+            elif host.type == 'hypervisor':
                 logger.error(u"计算节点{}无法ping通".format(ip))
-                dead_time_delay = (datetime.datetime.now() - host.values('last_alive_time')).seconds
+                dead_time_delay = (datetime.datetime.now() - host.last_alive_time).seconds
                 if dead_time_delay > 120:
                     vms = openstackcloud.get_servers_on_hypervisor(ip)
                     openstackcloud.set_service_status(ip, force_down='true')
