@@ -29,7 +29,7 @@ import base64
 
 
 @task()
-def add_ip():
+def execute_add_ip():
     openstackcloud = OpenStackCloud()
     openstackcloud.add_server_ip_list()
     hypervisors = ['172.50.18.212', '172.50.18.213']
@@ -143,3 +143,8 @@ def check_compute_service():
     logger.error(u'开始调用check_service周期任务，当前时间：{}'.format(now))
 
 
+@periodic_task(run_every=crontab(minute='*/10', hour='*', day_of_week="*"))
+def add_ip():
+    execute_add_ip.apply_async()
+    now = datetime.datetime.now()
+    logger.error(u'开始调用add_ip周期任务，当前时间：{}'.format(now))
