@@ -47,7 +47,6 @@ def execute_check_ip_task():
     # 将ip列表写入文件
     with open('/data/recv/iplist.txt','a') as f:
         for ip in ips:
-            print ip
             f.write(ip.ip + '\n')
     # 执行ping
     p = subprocess.Popen(r'/data/recv/fping.sh', stdout=subprocess.PIPE)
@@ -71,6 +70,7 @@ def execute_check_ip_task():
                     openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                     IpList.objects.filter(ip=ip).update(last_reboot_time=datetime.datetime.now())
                     logger.error(u"虚拟机{}超时无法ping通，已执行重启" .format(ip))
+                continue
             elif host.type == 'hypervisor':
                 logger.error(u"计算节点{}无法ping通".format(ip))
                 dead_time_delay = (datetime.datetime.now() - host.last_alive_time).seconds
@@ -83,6 +83,7 @@ def execute_check_ip_task():
                         if vm_ip is not None:
                             IpList.objects.filter(ip=vm_ip).update(last_reboot_time=datetime.datetime.now())
                     logger.error(u"计算节点{}无法ping通，已执行疏散")
+                continue
         IpList.objects.filter(ip=ip).update(last_alive_time=datetime.datetime.now())
     now = datetime.datetime.now()
     logger.error(u"check_ip周期任务执行完成，当前时间：{}".format(now))
