@@ -70,13 +70,18 @@ def execute_check_ip_task():
                 # 若存在相应IP的告警记录，判断是否已进行过自愈，已自愈的重新创建告警，未自愈的根据时间判断是否进行重启
                 if len(alarm_records) != 0:
                     last_alarm = alarm_records.order_by('-id')[0]
-                    # 上次告警已被处理，创建新告警
-                    print "上次告警处理结果: {}".format(last_alarm.recv_result)
+                    # 上次告警已被处理，且距离上次重启时间间隔超过180s，创建新告警
                     if last_alarm.recv_result == 'healed':
-                        Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now, alarm_content="ping不可达", alarm_level="important")
-                        logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
-                        continue
-                    # 第一次处理告警
+                        if (now - host.last_reboot_time).seconds < 180:
+                            # 间隔小于180s，可能处于重启状态，收敛
+                            logger.error(u"虚拟机 {} 重启期间ping不可达，收敛".format(ip))
+                            continue
+                        else:
+                            # 间隔大于180s之后ping不通，创建告警
+                            Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now, alarm_content="ping不可达", alarm_level="important")
+                            logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
+                            continue
+                    # 第一次处理告警，reboot_time为None
                     if host.last_reboot_time is None:
                         logger.error(u"虚拟机 {} ping不可达时间间隔：{}".format(ip, (now - last_alarm.alarm_time).seconds))
                         if (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
@@ -90,8 +95,9 @@ def execute_check_ip_task():
                             last_alarm.save()
                             continue
                         continue
-                    # 第N次处理告警
+                    # 第N次处理告警，告警超过容忍时间，执行重启
                     if (now - last_alarm.alarm_time).seconds > host.ignore_seconds and (now - host.last_reboot_time).seconds > 170:
+                        logger.error(u"进入第三个循环")
                         res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                         if res:
                             logger.error(u"虚拟机 {} 已重启".format(ip))
