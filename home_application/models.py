@@ -15,6 +15,8 @@ from django.db import models
 class IpList(models.Model):
     ip = models.CharField(max_length=64)
     type = models.CharField(max_length=10)
+    auto_reboot = models.BooleanField(blank=True, null=True)
+    ignore_seconds = models.IntegerField()
     last_alive_time = models.DateTimeField(blank=True, null=True)
     last_reboot_time = models.DateTimeField(blank=True, null=True)
 
@@ -26,7 +28,7 @@ class Alarm(models.Model):
     alarm_content = models.TextField()
     alarm_level = models.CharField(max_length=32)
     recv_time = models.DateTimeField(null=True, blank=True)
-    recv_result = models.CharField(max_length=32)
+    recv_result = models.CharField(max_length=32, blank=True)
 
 
 class Recv(models.Model):
