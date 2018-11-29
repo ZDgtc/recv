@@ -142,6 +142,7 @@ def execute_check_service(client, bk_biz_id):
     compute_services_down = openstackcloud.get_compute_service_status()
     network_agents_down = openstackcloud.get_network_agents_status()
     cinderv3_services_down = openstackcloud.get_cinderv3_service_status()
+    now = datetime.datetime.now()
     if len(compute_services_down) != 0:
         for item in compute_services_down:
             service = item['service']
@@ -155,7 +156,9 @@ def execute_check_service(client, bk_biz_id):
                 result, instance_id = get_job_instance_id(client, bk_biz_id, service_ip, script_content)
                 if result:
                     logger.error(u"{}上的{}状态为down，重启服务".format(service_ip, service))
-                    Alarm.objects.create()
+                    Alarm.objects.create(ip=service_ip, type="OpenStack服务",
+                                         alarm_time=now, alarm_content="{}不可用".format(service), alarm_level="important",
+                                         recv_time=now, recv_result="healed")
     if len(network_agents_down) != 0:
         for item in network_agents_down:
             agent = item['agent']
@@ -166,6 +169,9 @@ def execute_check_service(client, bk_biz_id):
             result, instance_id = get_job_instance_id(client, bk_biz_id, agent_ip, script_content)
             if result:
                 logger.error(u"{}上的{}状态为down，重启服务".format(agent_ip, agent))
+                Alarm.objects.create(ip=agent_ip, type="OpenStack服务",
+                                     alarm_time=now, alarm_content="{}不可用".format(agent), alarm_level="important",
+                                     recv_time=now, recv_result="healed")
     if len(cinderv3_services_down) != 0:
         for item in cinderv3_services_down:
             service = item['service']
@@ -176,6 +182,9 @@ def execute_check_service(client, bk_biz_id):
             result, instance_id = get_job_instance_id(client, bk_biz_id, service_ip, script_content)
             if result:
                 logger.error(u"{}上的{}状态为down，重启服务".format(service_ip, service))
+                Alarm.objects.create(ip=service_ip, type="OpenStack服务",
+                                     alarm_time=now, alarm_content="{}服务不可用".format(service), alarm_level="important",
+                                     recv_time=now, recv_result="healed")
 
 
 @periodic_task(run_every=crontab(minute='*/1', hour='*', day_of_week="*"))
