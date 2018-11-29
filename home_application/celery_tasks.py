@@ -60,7 +60,7 @@ def execute_check_ip_task():
         tmp = content[i]
         ip = tmp[:tmp.index('is') - 1]
         if 'unreachable' in tmp:
-            host = IpList.objects.filter(ip=ip)
+            host = IpList.objects.filter(ip=ip)[0]
             print host.type
             print host.values('type')
             if host.values('type') == 'vm':
