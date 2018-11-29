@@ -52,7 +52,7 @@ def execute_check_ip_task():
     p = subprocess.Popen(r'/data/recv/fping.sh', stdout=subprocess.PIPE)
     p.stdout.read()
     # 读取result文件，更新ip的状态,超时不通的ip，执行重启
-    result = open('/data/result.txt', 'r')
+    result = open('/data/recv/result.txt', 'r')
     content = result.read().split('\n')
     openstackcloud = OpenStackCloud()
     for i in range(len(content) - 1):
