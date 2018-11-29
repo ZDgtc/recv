@@ -82,6 +82,7 @@ class OpenStackCloud(object):
                '"scope": { "project": { "domain": { "name": "%s" }, "name":  "%s" } } }}'
         data = data % (self.conf['user_domain_name'], self.conf['username'], self.conf['password'],
                        self.conf['project_domain_name'], self.conf['project_name'])
+        res = {}
         try:
             logging.debug('Try to get token...')
             res = requests.post(url, data=data, headers=headers)
@@ -119,12 +120,16 @@ class OpenStackCloud(object):
             headers = self.headers.copy()
         headers['X-Auth-Token'] = self.token
         headers["X-OpenStack-Nova-API-Version"] = "2.53"
-
         """获取requests方法"""
         req = getattr(requests, method)
-
-        res = req(url, data=data, headers=headers, params=params, verify=False)
-        logging.debug("Request url: %s" % res.url)
+        res = {}
+        try:
+            res = req(url, data=data, headers=headers, params=params, verify=False)
+            logging.debug("Request url: %s" % res.url)
+        except Exception as e:
+            msg = "Fail to %s %s data: %s headers: %s" % (method, suffix, data, headers)
+            logging.critical(msg)
+            logging.critical(e)
 
         """token过期，重新获取"""
         if res.status_code == 401:
