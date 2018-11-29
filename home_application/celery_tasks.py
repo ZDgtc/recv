@@ -47,6 +47,7 @@ def execute_check_ip_task():
     # 将ip列表写入文件
     with open('/data/recv/iplist.txt','a') as f:
         for ip in ips:
+            print ip
             f.write(ip.ip + '\n')
     # 执行ping
     p = subprocess.Popen(r'/data/recv/fping.sh', stdout=subprocess.PIPE)
@@ -60,6 +61,8 @@ def execute_check_ip_task():
         ip = tmp[:tmp.index('is') - 1]
         if 'unreachable' in tmp:
             host = IpList.objects.filter(ip=ip)
+            print host.type
+            print host.values('type')
             if host.values('type') == 'vm':
                 logger.error(u"虚拟机{}无法ping通".format(ip))
                 dead_time_delay = (datetime.datetime.now() - host.values('last_alive_time')).seconds
