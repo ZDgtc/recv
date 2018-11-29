@@ -13,5 +13,5 @@ from django.conf.urls import patterns
 
 urlpatterns = patterns(
     'home_application.views',
-    (r'^$', 'add_ip'),
+    (r'^$', 'openstack'),
 )
