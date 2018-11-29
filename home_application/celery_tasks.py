@@ -35,9 +35,9 @@ def execute_add_ip():
     hypervisors = ['172.50.18.212', '172.50.18.213']
     for hypervisor in hypervisors:
         if len(IpList.objects.filter(ip=hypervisor)) == 0:
-            IpList.objects.create(ip=hypervisor, type='hypervisor', ignore_seconds=170, auto_reboot=False)
+            IpList.objects.create(ip=hypervisor, type='hypervisor', ignore_seconds=100, auto_reboot=False)
     if len(IpList.objects.filter(ip="172.50.18.211")) == 0:
-        IpList.objects.create(ip="172.50.18.211", type='controller', ignore_seconds=170, auto_reboot=False)
+        IpList.objects.create(ip="172.50.18.211", type='controller', ignore_seconds=100, auto_reboot=False)
 
 @task()
 def execute_check_ip_task():
@@ -70,14 +70,15 @@ def execute_check_ip_task():
                 # 若存在相应IP的告警记录，判断是否已进行过自愈，已自愈的重新创建告警，未自愈的根据时间判断是否进行重启
                 if len(alarm_records) != 0:
                     last_alarm = alarm_records.order_by('-id')[0]
-                    # 上次告警已被处理
+                    # 上次告警已被处理，创建新告警
+                    print "上次告警处理结果: {}".format(last_alarm.recv_result)
                     if last_alarm.recv_result == 'healed':
                         Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now, alarm_content="ping不可达", alarm_level="important")
                         logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
                         continue
                     # 第一次处理告警
                     if host.last_reboot_time is None:
-                        logger.error(u"ping不可达时间间隔：{}".format((now - last_alarm.alarm_time).seconds))
+                        logger.error(u"虚拟机 {} ping不可达时间间隔：{}".format(ip, (now - last_alarm.alarm_time).seconds))
                         if (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
                             res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                             if res:
@@ -88,8 +89,7 @@ def execute_check_ip_task():
                             last_alarm.recv_result = 'healed'
                             last_alarm.save()
                             continue
-                        else:
-                            continue
+                        continue
                     # 第N次处理告警
                     if (now - last_alarm.alarm_time).seconds > host.ignore_seconds and (now - host.last_reboot_time).seconds > 170:
                         res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)

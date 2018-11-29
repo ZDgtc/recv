@@ -296,6 +296,6 @@ class OpenStackCloud(object):
         for server in servers:
             ip = server['addresses'].values()[0][0]['addr']
             if len(IpList.objects.filter(ip=ip)) == 0:
-                IpList.objects.create(ip=ip, type='vm', auto_reboot=True, ignore_seconds=170)
+                IpList.objects.create(ip=ip, type='vm', auto_reboot=True, ignore_seconds=100)
 
 
