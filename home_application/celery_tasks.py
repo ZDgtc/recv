@@ -76,14 +76,14 @@ def execute_check_ip_task():
                         logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
                         continue
                     # 第一次处理告警
-                    if host.last_reboot_time is '' and (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
+                    if host.last_reboot_time is None and (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
                         res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                         if res:
                             logger.error(u"虚拟机 {} 已重启".format(ip))
                         host.update(last_reboot_time=now)
                         last_alarm.update(recv_time=now, recv_result='healed')
                         continue
-                    # 非第一次处理告警
+                    # 第N次处理告警
                     if (now - last_alarm.alarm_time).seconds > host.ignore_seconds and (now - host.last_reboot_time).seconds > 170:
                         res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                         if res:
