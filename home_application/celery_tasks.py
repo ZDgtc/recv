@@ -76,20 +76,30 @@ def execute_check_ip_task():
                         logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
                         continue
                     # 第一次处理告警
-                    if host.last_reboot_time is None and (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
-                        res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
-                        if res:
-                            logger.error(u"虚拟机 {} 已重启".format(ip))
-                        host.update(last_reboot_time=now)
-                        last_alarm.update(recv_time=now, recv_result='healed')
-                        continue
+                    if host.last_reboot_time is None:
+                        logger.error(u"ping不可达时间间隔：{}".format((now - last_alarm.alarm_time).seconds))
+                        if (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
+                            res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
+                            if res:
+                                logger.error(u"虚拟机 {} 已重启".format(ip))
+                            host.last_reboot_time = now
+                            host.save()
+                            last_alarm.recv_time = now
+                            last_alarm.recv_result = 'healed'
+                            last_alarm.save()
+                            continue
+                        else:
+                            continue
                     # 第N次处理告警
                     if (now - last_alarm.alarm_time).seconds > host.ignore_seconds and (now - host.last_reboot_time).seconds > 170:
                         res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                         if res:
                             logger.error(u"虚拟机 {} 已重启".format(ip))
-                        host.update(last_reboot_time=now)
-                        last_alarm.update(recv_time=now, recv_result='healed')
+                        host.last_reboot_time = now
+                        host.save()
+                        last_alarm.recv_time = now
+                        last_alarm.recv_result = 'healed'
+                        last_alarm.save()
                 # 无告警记录，创建记录
                 else:
                     Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now, alarm_content="ping不可达",alarm_level="important")
