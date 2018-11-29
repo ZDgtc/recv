@@ -16,7 +16,7 @@ class IpList(models.Model):
     ip = models.CharField(max_length=64)
     type = models.CharField(max_length=10)
     auto_reboot = models.BooleanField(blank=True)
-    ignore_seconds = models.IntegerField()
+    ignore_seconds = models.IntegerField(blank=True, null=True)
     last_alive_time = models.DateTimeField(blank=True, null=True)
     last_reboot_time = models.DateTimeField(blank=True, null=True)
 

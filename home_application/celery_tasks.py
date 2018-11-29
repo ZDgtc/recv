@@ -35,9 +35,9 @@ def execute_add_ip():
     hypervisors = ['172.50.18.212', '172.50.18.213']
     for hypervisor in hypervisors:
         if len(IpList.objects.filter(ip=hypervisor)) == 0:
-            IpList.objects.create(ip=hypervisor, type='hypervisor', ignore_seconds=170)
+            IpList.objects.create(ip=hypervisor, type='hypervisor', ignore_seconds=170, auto_reboot=False)
     if len(IpList.objects.filter(ip="172.50.18.211")) == 0:
-        IpList.objects.create(ip="172.50.18.211", type='controller', ignore_seconds=170)
+        IpList.objects.create(ip="172.50.18.211", type='controller', ignore_seconds=170, auto_reboot=False)
 
 @task()
 def execute_check_ip_task():
@@ -73,8 +73,12 @@ def execute_check_ip_task():
                     if last_alarm.recv_result == 'healed':
                         Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now, alarm_content="ping不可达",alarm_level="important")
                         logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
-                    elif (now - last_alarm.alarm_time).seconds < host.ignore_seconds:
-                        logger.error(u"虚拟机 {} ping不可达，已收敛".format(ip))
+                    elif host.last_reboot_time is '':
+                        res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
+                        if res:
+                            logger.error(u"虚拟机 {} 已重启".format(ip))
+                        host.update(last_reboot_time=now)
+                        last_alarm.update(recv_time=now, recv_result='healed')
                     elif (now - last_alarm.alarm_time).seconds > host.ignore_seconds and (now - host.last_reboot_time).seconds > 170:
                         res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                         if res:
