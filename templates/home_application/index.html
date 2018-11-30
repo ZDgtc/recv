@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title></title>
+    <!-- 若您需要使用Kendo UI Professional，请联系版权人获得合法的授权或许可。 -->
+    <!-- Bootstrap css -->
+    <link href="https://magicbox.bk.tencent.com/static_api/v3/assets/bootstrap-3.3.4/css/bootstrap.min.css" rel="stylesheet">
+    <!-- kendo ui css -->
+    <link href="https://magicbox.bk.tencent.com/static_api/v3/assets/kendoui-2015.2.624/styles/kendo.common.min.css"
+        rel="stylesheet">
+    <link href="https://magicbox.bk.tencent.com/static_api/v3/assets/kendoui-2015.2.624/styles/kendo.default.min.css"
+        rel="stylesheet">
+    <!-- font-awesome -->
+    <link href="https://magicbox.bk.tencent.com/static_api/v3/assets/fontawesome/css/font-awesome.css" rel="stylesheet">
+    <!--蓝鲸提供的公用样式库 -->
+    <link href="https://magicbox.bk.tencent.com/static_api/v3/bk/css/bk.css" rel="stylesheet">
+    <link href="https://magicbox.bk.tencent.com/static_api/v3/bk/css/bk_pack.css" rel="stylesheet">
+    <!-- 如果要使用Bootstrap的js插件，必须先调入jQuery -->
+    <script src="https://magicbox.bk.tencent.com/static_api/v3/assets/js/jquery-1.10.2.min.js"></script>
+    <!-- 包括所有bootstrap的js插件或者可以根据需要使用的js插件调用　-->
+    <script src="https://magicbox.bk.tencent.com/static_api/v3/assets/echarts-2.0/echarts-all.js"></script>
+    <script src="https://magicbox.bk.tencent.com/static_api/v3/assets/bootstrap-3.3.4/js/bootstrap.min.js"></script>
+    <!-- 包括所有kendoui的js插件或者可以根据需要使用的js插件调用　-->
+    <script src="https://magicbox.bk.tencent.com/static_api/v3/assets/kendoui-2015.2.624/js/kendo.all.min.js"></script>
+    <script src="https://magicbox.bk.tencent.com/static_api/v3/assets/echarts-2.0/echarts-all.js"></script>
+    <script src="https://magicbox.bk.tencent.com/static_api/v3/bk/js/bk.js"></script>
+    <!-- 数据埋点统计 -->
+    <script src="http://magicbox.bk.tencent.com/static_api/analysis.js"></script>
+    <!-- 以下两个插件用于在IE8以及以下版本浏览器支持HTML5元素和媒体查询，如果不需要用可以移除 -->
+    <!--[if lt IE 9]><script src="https://magicbox.bk.tencent.com/static_api/v3/assets/js/html5shiv.min.js"></script><script src="https://magicbox.bk.tencent.com/static_api/v3/assets/js/respond.min.js"></script><![endif]-->
+    <!-- 分页表格 -->
+    <link href="https://magicbox.bk.tencent.com/static_api/v3/assets/datatables-1.10.7/dataTables.bootstrap.css" rel="stylesheet"/>
+    <script src="https://magicbox.bk.tencent.com/static_api/v3/assets/datatables-1.10.7/jquery.dataTables.js" type="text/javascript"></script>
+    <script src="https://magicbox.bk.tencent.com/static_api/v3/assets/datatables-1.10.7/dataTables.bootstrap.js" type="text/javascript"></script>
+    <!-- angularjs -->
+    <script src="https://cdn.staticfile.org/angular.js/1.4.6/angular.min.js"></script>
+</head>
+
+<body class="bg-white" data-bg-color="bg-white">
+    <div class="king-page-box" ng-app="myApp" ng-controller="myCtrl">
+        <div class="king-layout1-header">
+            <nav class="">
+                <div style="overflow:hidden; z-index: inherit;" class="navbar king-horizontal-nav1  f14">
+                    <div class="navbar-container">
+                        <div class="navbar-header pull-left">
+                            <a class="navbar-brand" href="javascript:;">
+                                <img src="https://magicbox.bk.tencent.com/static_api/v3/bk/images/logo.png" class="logo">
+                            </a>
+                        </div>
+                        <ul class="nav navbar-nav pull-left m0">
+                            <li class="active"><a href="javascript:void(0);">首页</a></li>
+                            <li><a href="javascript:void(0);">关于我们</a></li>
+                            <li><a href="javascript:void(0);">联系我们</a></li>
+                        </ul>
+                        <div class="navbar-header pull-right">
+                            <ul class="nav">
+                                <li class="user-info">
+                                    <a href="javascript:;">
+                                        <img class="img-rounded" src="https://magicbox.bk.tencent.com/static_api/v3/components/horizontal_nav1/images/avatar.png">
+                                        <span>admin</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        <div class="row">
+            <div class="col-md-8 text-center" style="padding-right: 0px">
+                <div class="panel panel-default" style="border-bottom: none; border-right: none; box-shadow:none;">
+                    <div class="panel-body">
+                        <div class="container-fluid mb0 ">
+                            <div class="row">
+                                <div class="col-md-6" style="padding-right: 5px; padding-left: 5px">
+                                    <div class="panel panel-default mb0">
+                                        <div class="panel-heading"> OpenStack </div>
+                                        <div class="panel-body">
+                                            <div class="panel mb0 panel-box  ">
+                                                <div class="list-justified-container">
+                                                    <ul class="list-justified text-center">
+                                                        <li>
+                                                            <p class="f24" style="color: red">{{ alarmNums.ceph_alarm_num }}</p>
+                                                            <p><i class="fa fa-warning" style="color:red"></i>告警数</p>
+                                                        </li>
+                                                        <li>
+                                                            <p class="f24" style="color: orange">{{ alarmNums.ceph_recv_succeed_num }}</p>
+                                                            <p><i class="fa fa-bolt" style="color:orange"></i>告警数</p>
+                                                        </li>
+                                                        <li>
+                                                            <p class="f24" style="color:green">{{ alarmNums.ceph_opera_num }}</p>
+                                                            <p><i class="fa fa-check" style="color:green"></i>自愈数</p>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" style="padding-right: 0px; padding-left: 0px">
+                                    <div class="panel panel-default mb0">
+                                        <div class="panel-heading"> CEPH </div>
+                                        <div class="panel-body">
+                                            <div class="panel mb0 panel-box  ">
+                                                <div class="list-justified-container">
+                                                    <ul class="list-justified text-center">
+                                                        <li>
+                                                            <p class="f24">679</p>
+                                                            <p><i class="fa fa-warning" style="color:red"></i>告警数</p>
+                                                        </li>
+                                                        <li>
+                                                            <p class="f24">575</p>
+                                                            <p><i class="fa fa-bolt" style="color:orange"></i>告警数</p>
+                                                        </li>
+                                                        <li>
+                                                            <p class="f24">23</p>
+                                                            <p><i class="fa fa-check" style="color:green"></i>自愈数</p>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 text-center" style="padding-left: 5px; padding-right: 0px;">
+                                    <div class="panel panel-default">
+                                        <div class="panel-body" style="padding: 0">
+                                            <div class="king-block-header king-info">
+                                                <h3 class="king-block-title pt10 pb10">
+                                                    <span class="fa fa-tasks mr5"></span>自愈处理记录</h3>
+                                            </div>
+                                            <div class="king-block-content">
+                                                <table id="table2_demo1" class="table table-bordered table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th style="text-align: center">ID</th>
+                                                            <th style="text-align: center">告警发现时间</th>
+                                                            <th style="text-align: center">告警内容</th>
+                                                            <th style="text-align: center">自愈处理时间</th>
+                                                            <th style="text-align: center">自愈处理结果</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr ng-repeat="cureItem in cureRecords">
+                                                            <td class="p15" style="width:10%;">{{cureItem.alarm_id}}</td>
+                                                            <td style="width:20%;">{{cureItem.alarm_detect_time}}</td>
+                                                            <td style="width:30%;">{{cureItem.alarm_content}}</td>
+                                                            <td style="width:20%;">{{cureItem.alarm_deal_time}}</td>
+                                                            <td style="width:20%;">{{cureItem.alarm_dealed_result}}</td>
+                                                        </tr>
+
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-center" style="padding: 0px">
+                <div class="panel panel-default mb0" style="border-left: none; border-bottom: red">
+                    <div class="panel-body">
+                        <div class="container-fluid mb0 ">
+                            <div class="row">
+                                <div class="col-md-12" style="padding-right: 5px; padding-left: 5px;">
+                                    <div class="panel panel-default mb0">
+                                        <div class="panel-heading"> 自愈任务 </div>
+                                        <div class="panel-body">
+                                            <div class="panel mb0 panel-box">
+                                                <div class="list-justified-container">
+                                                    <ul class="king-timeline-simple" ng-repeat="lineItem in timeLines">
+                                                        <li class="{{lineItem.type}}" style="list-style: none">
+                                                            <div class="timeline-simple-wrap">
+                                                                {{lineItem.celery_opra_content}}
+                                                                <span class="timeline-simple-date">{{lineItem.celery_opra_time}}</span>
+                                                            </div>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    <script>
+        var app = angular.module('myApp', []);
+        app.controller('myCtrl', function ($scope, $http, $interval) {
+            // 自愈结果对象
+            $scope.cureRecords = [{
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "1",
+                alarm_detect_time: "2018/11/28 14:20",
+                alarm_content: "内存超过阀值",
+                alarm_deal_time: "2018/11/28 15:00",
+                alarm_dealed_result: "成功"
+            }, {
+                alarm_id: "2",
+                alarm_detect_time: "2018/11/29 14:20",
+                alarm_content: "CPU超过阀值",
+                alarm_deal_time: "2018/11/29 15:00",
+                alarm_dealed_result: "成功"
+            }];
+            // 时间轴
+            $scope.timeLines = [{
+                type: "primary",
+                content: "检测1",
+                time: '10分钟前'
+            }, {
+                type: "info",
+                content: "检测2",
+                time: "8分钟前"
+            }, {
+                type: "warning",
+                content: "检测3",
+                time: "6分钟前"
+            }, {
+                type: "success",
+                content: "检测4",
+                time: "3分钟前"
+            }, {
+                type: "warning",
+                content: "检测5",
+                time: "1分钟前"
+            }];
+
+            // 获取数据
+            getTimeLines = function () {
+                $http({
+                    method: 'GET',
+                    url: '${SITE_URL}get_celery_record/'
+                }).then(function successCallback(response) {
+                    $scope.timeLines = response.data.data;
+                    console.log($scope.timeLines);
+                }, function errorCallback(response) {
+                    // 请求失败执行代码
+                });
+            };
+
+            getAlarmNum = function () {
+                $http({
+                    method: 'GET',
+                    url: '${SITE_URL}alarm_num/'
+                }).then(function successCallback(response) {
+                    $scope.alarmNums = response.data;
+                    console.log($scope.alarmNums);
+                }, function errorCallback(response) {
+                    // 请求失败执行代码
+                });
+            }
+            getAlarmNum();
+            getTimeLines();
+
+
+            var timer=$interval(function(){
+                //console.log('定时执行')
+                getAlarmNum();
+                getTimeLines();
+            },30000);
+
+            $scope.$on('$destroy', function () {
+                $interval.cancel(timer);
+            });
+        });
+
+
+        $(function () {
+
+            //table2_demo1_js_start
+            //表格(DataTables)-1，html数据源
+            var language = {
+                search: '搜索：',
+                lengthMenu: "每页显示 _MENU_ 记录",
+                zeroRecords: "没找到相应的数据！",
+                info: "分页 _PAGE_ / _PAGES_",
+                infoEmpty: "暂无数据！",
+                infoFiltered: "(从 _MAX_ 条数据中搜索)",
+                paginate: {
+                    first: '首页',
+                    last: '尾页',
+                    previous: '上一页',
+                    next: '下一页',
+                }
+            }
+            $('#table2_demo1').dataTable({
+                paging: true, //隐藏分页
+                ordering: false, //关闭排序
+                info: false, //隐藏左下角分页信息
+                searching: false, //关闭搜索
+                pageLength: 5, //每页显示几条数据
+                lengthChange: false, //不允许用户改变表格每页显示的记录数
+                language: language //汉化
+            });
+            //table2_demo1_js_end
+        });
+
+        function renderTpl(str, cfg) {
+            var re = /(#(.+?)#)/g;
+
+            return str.replace(re, function () {
+                var val = cfg[arguments[2]] + '';
+                if (typeof val == 'undefined') {
+                    val = '';
+                }
+                return val;
+            });
+        }
+
+        function initList2(conf) {
+            // 异步请求后台数据
+            $.ajax({
+                url: conf.url,
+                type: 'GET',
+                dataType: conf.dataType,
+                success: function (res) {
+                    //获取数据成功
+                    if (res.code == 0) {
+                        var _html = ' ';
+                        var list = res.data.items;
+                        var tpl = $('#list2_tpl').html();
+                        var headerTpl = $('#list2_header_tpl').html();
+                        if (list.length == 0) {
+                            _html = $('#list2_nodata_tpl').html();
+                        } else {
+                            for (var i = 0, len = list.length; i < len; i++) {
+                                var item = list[i];
+                                _html += renderTpl(tpl, item)
+                            }
+                        }
+                        $(conf.container).find('.ranger-box tbody').html(_html);
+                        $(conf.container).find('.ranger-header-box thead').html(renderTpl(headerTpl, res.data.catalogues));
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

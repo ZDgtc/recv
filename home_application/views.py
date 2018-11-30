@@ -9,13 +9,87 @@ an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express o
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-from common.mymako import render_mako_context
-from celery_tasks import execute_add_ip
-import os
-import subprocess
-import datetime
+import json
+import pdb
+
+import time
+import base64
+from models import Alarm, Recv
+from common.mymako import render_mako_context, render_json
 
 
-def openstack(request):
-    execute_add_ip.delay()
-    return 'Done'
+def index(request):
+    return render_mako_context(request, '/home_application/index.html')
+
+
+def get_celery_record(request):
+    records = Recv.objects.all()
+    print type(records)
+    data = []
+    for record in records:
+        data.append({'celery_opra_time': str(record.celery_opra_time), 'celery_opra_content': record.celery_opra_content})
+    # #pdb.set_trace()
+    # #print data
+    result = {"data":data}
+    return render_json(result)
+
+
+def get_alarm_num(request):
+    ceph_alarm_num = Alarm.objects.filter(type__icontains="CEPH",alarm_level='ERROR').count()
+    ceph_opera_num = Alarm.objects.filter(type__icontains="CEPH",recv_time__isnull=False).count()
+    ceph_recv_succeed_num = Alarm.objects.filter(type__icontains="CEPH",recv_result__icontains="成功").count()
+    openstack_alarm_num = Alarm.objects.filter(type__icontains="OpenStack",alarm_level='ERROR').count()
+    openstack_opera_num = Alarm.objects.filter(type__icontains="OpenStack",recv_time__isnull=False).count()
+    openstack_recv_succeed_num = Alarm.objects.filter(type__icontains="OpenStack", recv_result__icontains="成功").count()
+
+    result = {"ceph_alarm_num": ceph_alarm_num, "ceph_opera_num": ceph_opera_num,
+              "ceph_recv_succeed_num": ceph_recv_succeed_num,
+              "openstack_alarm_num": openstack_alarm_num, "openstack_opera_num": openstack_opera_num,
+              "openstack_recv_succeed_num": openstack_recv_succeed_num}
+
+    return render_json(result)
+
+
+def get_recv_records(request):
+    records = Alarm.objects.filter(recv_time__isnull=False, recv_result__icontains="成功").reverse()[:5]
+    data = []
+    for record in records:
+        data.append(
+            {
+                "type": record.type,
+                "alarm_time": record.alarm_time,
+                "alarm_content": record.alarm_content,
+                "recv_time": record.recv_time,
+                "recv_result": record.recv_result
+             }
+        )
+    result = {
+        "data": data
+    }
+    return render_json(result)
+
+
+def search(request):
+    data = []
+    alarm_type = request.GET.get('type', None)  # Ceph/OpenStack/None
+    keyword = request.GET('keyword')
+    if alarm_type:
+        records = Alarm.objects.filter(type__contains=alarm_type, alarm_content__contains=keyword).order_by("-id")[:5]
+    else:
+        records = Alarm.objects.all().order_by("-id")[:5]
+    for record in records:
+        data.append(
+            {
+                "id": record.id,
+                "type": record.type,
+                "alarm_time": record.alarm_time,
+                "alarm_content": record.alarm_content,
+                "recv_time": record.recv_time,
+                "recv_result": record.recv_result
+            }
+        )
+    result = {
+        "data": data
+    }
+    return render_json(result)
+
