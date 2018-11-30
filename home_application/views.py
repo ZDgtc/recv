@@ -14,7 +14,7 @@ import pdb
 
 import time
 import base64
-from models import Alarm, Recv
+from models import Alarm, Operations
 from common.mymako import render_mako_context, render_json
 
 
@@ -23,7 +23,7 @@ def index(request):
 
 
 def get_celery_record(request):
-    records = Recv.objects.all()
+    records = Operations.objects.all()
     print type(records)
     data = []
     for record in records:

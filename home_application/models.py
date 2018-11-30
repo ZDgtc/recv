@@ -30,7 +30,7 @@ class Alarm(models.Model):
     recv_result = models.CharField(max_length=32, blank=True)
 
 
-class Recv(models.Model):
+class Operations(models.Model):
     ip = models.CharField(max_length=64)
     celery_opra_time = models.DateTimeField()
     celery_opra_content = models.TextField()

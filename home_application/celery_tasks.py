@@ -18,7 +18,7 @@ import datetime, time
 from celery import task
 from celery.schedules import crontab
 from celery.task import periodic_task
-from models import IpList, Alarm, Recv
+from models import IpList, Alarm, Operations
 from common.log import logger
 from openstack import OpenStackCloud
 from blueking.component.shortcuts import get_client_by_user
@@ -61,11 +61,10 @@ def execute_check_ip_task():
     for i in range(len(content) - 1):
         tmp = content[i]
         ip = tmp[:tmp.index('is') - 1]
-        # 对于ping不可达的主机
+        # 对于ping不可达的主机，做以下处理
         if 'unreachable' in tmp:
             # 过滤相应主机的记录
             host = IpList.objects.filter(ip=ip)[0]
-            # 若为虚拟机，且接入自愈，做以下处理
             if host.type == 'vm':
                 # 查询告警记录
                 alarm_records = Alarm.objects.filter(ip=host.ip)
@@ -106,7 +105,7 @@ def execute_check_ip_task():
                         host.last_reboot_time = now
                         host.save()
                         last_alarm.recv_time = now
-                        last_alarm.recv_result = '重启成功'
+                        last_alarm.recv_result = "重启成功"
                         last_alarm.save()
                     if (now - last_alarm.alarm_time).seconds < host.ignore_seconds:
                         logger.error(u"虚拟机 {} ping不可达未超过容忍时间，收敛".format(ip))
@@ -120,7 +119,7 @@ def execute_check_ip_task():
                 alarm_records = Alarm.objects.filter(ip=host.ip)
                 if len(alarm_records) != 0:
                     last_alarm = alarm_records.order_by('-id')[0]
-                    if last_alarm.recv_result == '重启成功':
+                    if last_alarm.recv_result == '疏散成功':
                         Alarm.objects.create(ip=host.ip, type='OpenStack计算节点', alarm_time=now, alarm_content="ping不可达", alarm_level="ERROR")
                     elif (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
                         vms = openstackcloud.get_servers_on_hypervisor(ip)
@@ -132,8 +131,11 @@ def execute_check_ip_task():
                             if vm_ip is not None:
                                 logger.error(u"虚拟机 {} 已被疏散".format(vm_ip))
                                 vm_host = IpList.objects.filter(ip=vm_ip)[0]
-                                vm_host.last_reboot_time=now
+                                vm_host.last_reboot_time = now
                                 vm_host.save()
+                        last_alarm.recv_result = "疏散成功"
+                        last_alarm.recv_time = now
+                        last_alarm.save()
     logger.error(u"check_ip周期任务执行完成，当前时间：{}".format(now))
 
 
@@ -145,6 +147,7 @@ def execute_check_service(client, bk_biz_id):
     network_agents_down = openstackcloud.get_network_agents_status()
     cinderv3_services_down = openstackcloud.get_cinderv3_service_status()
     now = datetime.datetime.now()
+    Operations.objects.create()
     if len(compute_services_down) != 0:
         for item in compute_services_down:
             service = item['service']
@@ -172,8 +175,8 @@ def execute_check_service(client, bk_biz_id):
             if result:
                 logger.error(u"{}上的{}状态为down，重启服务".format(agent_ip, agent))
                 Alarm.objects.create(ip=agent_ip, type="OpenStack服务",
-                                     alarm_time=now, alarm_content="{}不可用".format(agent), alarm_level="important",
-                                     recv_time=now, recv_result="healed")
+                                     alarm_time=now, alarm_content="{}不可用".format(agent), alarm_level="ERROR",
+                                     recv_time=now, recv_result="重启进程成功")
     if len(cinderv3_services_down) != 0:
         for item in cinderv3_services_down:
             service = item['service']
@@ -185,8 +188,8 @@ def execute_check_service(client, bk_biz_id):
             if result:
                 logger.error(u"{}上的{}状态为down，重启服务".format(service_ip, service))
                 Alarm.objects.create(ip=service_ip, type="OpenStack服务",
-                                     alarm_time=now, alarm_content="{}服务不可用".format(service), alarm_level="important",
-                                     recv_time=now, recv_result="healed")
+                                     alarm_time=now, alarm_content="{}不可用".format(service), alarm_level="ERROR",
+                                     recv_time=now, recv_result="重启进程成功")
 
 
 @periodic_task(run_every=crontab(minute='*/1', hour='*', day_of_week="*"))
@@ -210,6 +213,7 @@ def add_ip():
     now = datetime.datetime.now()
     logger.error(u'开始调用add_ip周期任务，当前时间：{}'.format(now))
 
+# -----------------------------------以下为Ceph系统部分----------------------------------------------- #
 
 @periodic_task(run_every=crontab(minute='*/2', hour='*', day_of_week="*"))
 def get_osd_state():
@@ -217,7 +221,7 @@ def get_osd_state():
     celery_ip = "172.50.18.214"
     celery_opra_time = datetime.datetime.now()
     celery_opra_content = "检查 OSD 状态"
-    Recv.objects.create(ip = celery_ip,celery_opra_time = celery_opra_time, celery_opra_content = celery_opra_content)
+    Operations.objects.create(ip = celery_ip,celery_opra_time = celery_opra_time, celery_opra_content = celery_opra_content)
 
     # 检测 osd 状态
     user = "admin"
@@ -279,13 +283,12 @@ def get_osd_state():
                 # alarm_level = alarm_level, recv_time = recv_time,recv_result = recv_result)
 
 
-
 def recov_osd():
     # 写 celery 操作记录
     celery_ip = "172.50.18.214"
     celery_opra_time = datetime.datetime.now()
     celery_opra_content = "启动 OSD 自愈"
-    Recv.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
+    Operations.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
 
     # 开始 OSD 自愈操作， OSD 自愈的脚本id 为 17
     # 经过测试 OSD 自愈脚本运行时间 需要 35 秒
@@ -316,7 +319,7 @@ def recov_osd():
     celery_ip = "172.50.18.214"
     celery_opra_time = datetime.datetime.now()
     celery_opra_content = "OSD 自愈成功"
-    Recv.objects.create(ip = celery_ip,celery_opra_time = celery_opra_time, celery_opra_content = celery_opra_content)
+    Operations.objects.create(ip = celery_ip,celery_opra_time = celery_opra_time, celery_opra_content = celery_opra_content)
 
 
 @periodic_task(run_every=crontab(minute='*/2', hour='*', day_of_week="*"))
@@ -325,7 +328,7 @@ def get_osd_usage():
     celery_ip = "172.50.18.214"
     celery_opra_time = datetime.datetime.now()
     celery_opra_content = "检测 OSD 使用率"
-    Recv.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
+    Operations.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
 
     # 检测 osd 状态
     user = "admin"
@@ -392,7 +395,7 @@ def new_osd():
     celery_ip = "172.50.18.214"
     celery_opra_time = datetime.datetime.now()
     celery_opra_content = "启动 OSD 扩容"
-    Recv.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
+    Operations.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
 
     # 开始 OSD 扩容操作
     user = "admin"
@@ -421,7 +424,7 @@ def new_osd():
     celery_ip = "172.50.18.214"
     celery_opra_time = datetime.datetime.now()
     celery_opra_content = "OSD 扩容成功"
-    Recv.objects.create(ip = celery_ip,celery_opra_time = celery_opra_time, celery_opra_content = celery_opra_content)
+    Operations.objects.create(ip = celery_ip,celery_opra_time = celery_opra_time, celery_opra_content = celery_opra_content)
 
 
 @periodic_task(run_every=crontab(minute='*/2', hour='*', day_of_week="*"))
@@ -430,7 +433,7 @@ def get_mon_state():
     celery_ip = "172.50.18.214"
     celery_opra_time = datetime.datetime.now()
     celery_opra_content = "检测 MON 状态"
-    Recv.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
+    Operations.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
 
     # 检测 MON 状态
     user = "admin"
@@ -497,7 +500,7 @@ def recov_mon():
     celery_ip = "172.50.18.214"
     celery_opra_time = datetime.datetime.now()
     celery_opra_content = "启动 MON 自愈"
-    Recv.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
+    Operations.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
 
     # 开始 MON 自愈操作
     user = "admin"
@@ -526,4 +529,4 @@ def recov_mon():
     celery_ip = "172.50.18.214"
     celery_opra_time = datetime.datetime.now()
     celery_opra_content = "MON 自愈成功"
-    Recv.objects.create(ip = celery_ip,celery_opra_time = celery_opra_time, celery_opra_content = celery_opra_content)
+    Operations.objects.create(ip = celery_ip,celery_opra_time = celery_opra_time, celery_opra_content = celery_opra_content)
