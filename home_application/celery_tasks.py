@@ -41,6 +41,7 @@ def execute_add_ip():
     if len(IpList.objects.filter(ip="172.50.18.211")) == 0:
         IpList.objects.create(ip="172.50.18.211", type='controller', ignore_seconds=100, auto_reboot=False)
 
+
 @task()
 def execute_check_ip_task():
     ips = IpList.objects.all()
@@ -68,24 +69,15 @@ def execute_check_ip_task():
             if host.type == 'vm':
                 # 查询告警记录
                 alarm_records = Alarm.objects.filter(ip=host.ip)
-                # 若存在相应IP的告警记录，判断是否已进行过自愈，已自愈的重新创建告警，未自愈的根据时间判断是否进行重启
+                # 若存在相应IP的告警记录，判断是否已进行过处理，已处理的重新创建告警，未处理的根据时间判断是否进行处理
                 if len(alarm_records) != 0:
                     last_alarm = alarm_records.order_by('-id')[0]
-                    # 上次告警已被处理，且距离上次重启时间间隔超过180s，创建新告警
-                    if last_alarm.recv_result == '重启成功':
-                        if (now - host.last_reboot_time).seconds < 180:
-                            # 间隔小于180s，可能处于重启状态，收敛
-                            logger.error(u"虚拟机 {} 重启期间ping不可达，收敛".format(ip))
-                            continue
-                        else:
-                            # 间隔大于180s之后ping不通，创建告警
-                            Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now, alarm_content="ping不可达", alarm_level="ERROR")
-                            logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
-                            continue
-                    # 第一次处理告警，reboot_time为None
+                    # 第一次处理告警
                     if host.last_reboot_time is None:
-                        logger.error(u"虚拟机 {} ping不可达时间间隔：{}".format(ip, (now - last_alarm.alarm_time).seconds))
-                        if (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
+                        if (now - last_alarm.alarm_time).seconds > 600:
+                            Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now,
+                                                 alarm_content="ping不可达", alarm_level="ERROR")
+                        elif (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
                             res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                             if res:
                                 logger.error(u"虚拟机 {} 已重启".format(ip))
@@ -94,10 +86,22 @@ def execute_check_ip_task():
                             last_alarm.recv_time = now
                             last_alarm.recv_result = '重启成功'
                             last_alarm.save()
-                            continue
-                        continue
-                    # 第N次处理告警，告警超过容忍时间，执行重启
-                    if (now - last_alarm.alarm_time).seconds > host.ignore_seconds and (now - host.last_reboot_time).seconds > 170:
+                        else:
+                            logger.error(u"虚拟机 {} ping不可达时间间隔：{}".format(ip, (now - last_alarm.alarm_time).seconds))
+                    # 上一个告警已处理，创建告警
+                    elif last_alarm.recv_result == '重启成功':
+                        if (now - host.last_reboot_time).seconds < 180:
+                            logger.error(u"虚拟机 {} 重启期间ping不可达，收敛".format(ip))
+                        else:
+                            Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now,
+                                                 alarm_content="ping不可达", alarm_level="ERROR")
+                            logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
+                    # 上一个告警未处理且超过处理时限，创建新告警
+                    elif (now - last_alarm.alarm_time).seconds > 600:
+                        Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now,
+                                             alarm_content="ping不可达", alarm_level="ERROR")
+                    # 告警未处理且未超时，若告警超过容忍时间，执行重启
+                    elif (now - last_alarm.alarm_time).seconds > host.ignore_seconds and (now - host.last_reboot_time).seconds > 170:
                         logger.error(u"虚拟机 {} ping不可达超过容忍时间，执行重启".format(ip))
                         res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                         if res:
@@ -107,24 +111,33 @@ def execute_check_ip_task():
                         last_alarm.recv_time = now
                         last_alarm.recv_result = "重启成功"
                         last_alarm.save()
-                    if (now - last_alarm.alarm_time).seconds < host.ignore_seconds:
+                    # 告警未处理且未超时，若告警未超过容忍时间，执行重启
+                    else:
                         logger.error(u"虚拟机 {} ping不可达未超过容忍时间，收敛".format(ip))
                 # 无告警记录，创建记录
                 else:
-                    Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now, alarm_content="ping不可达",alarm_level="ERROR")
+                    Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now, alarm_content="ping不可达",
+                                         alarm_level="ERROR")
                     logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
             # 若为计算节点，做以下处理
             elif host.type == 'hypervisor':
-                logger.error(u"计算节点 {} 无法ping通".format(ip))
+                logger.error(u"计算节点 {} ping不可达".format(ip))
                 alarm_records = Alarm.objects.filter(ip=host.ip)
                 if len(alarm_records) != 0:
                     last_alarm = alarm_records.order_by('-id')[0]
+                    # 上次告警已处理，重新创建告警
                     if last_alarm.recv_result == '疏散成功':
-                        Alarm.objects.create(ip=host.ip, type='OpenStack计算节点', alarm_time=now, alarm_content="ping不可达", alarm_level="ERROR")
+                        Alarm.objects.create(ip=host.ip, type='OpenStack计算节点', alarm_time=now, alarm_content="ping不可达",
+                                             alarm_level="ERROR")
+                    # 上次告警未处理且超时，重新创建告警
+                    elif (now - last_alarm.alarm_time).seconds > 600:
+                        Alarm.objects.create(ip=host.ip, type='OpenStack计算节点', alarm_time=now, alarm_content="ping不可达",
+                                             alarm_level="ERROR")
+                    # 上次告警未处理，超过容忍时间，执行疏散
                     elif (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
                         vms = openstackcloud.get_servers_on_hypervisor(ip)
                         openstackcloud.set_service_status(ip, force_down='true')
-                        logger.error(u"计算节点{}无法ping通，开始执行疏散".format(ip))
+                        logger.error(u"计算节点 {} ping不可达，开始执行疏散".format(ip))
                         for vm in vms:
                             openstackcloud.evacuate(vm)
                             vm_ip = openstackcloud.get_ip_by_server_id(vm)
@@ -136,6 +149,10 @@ def execute_check_ip_task():
                         last_alarm.recv_result = "疏散成功"
                         last_alarm.recv_time = now
                         last_alarm.save()
+                    else:
+                        logger.error(u"计算节点 {} ping不可达，开始执行疏散".format(ip))
+                else:
+                    Alarm.objects.create(ip=host.ip, type='OpenStack计算节点', alarm_time=now, alarm_content="ping不可达", alarm_level="ERROR")
     logger.error(u"check_ip周期任务执行完成，当前时间：{}".format(now))
 
 
@@ -147,49 +164,128 @@ def execute_check_service(client, bk_biz_id):
     network_agents_down = openstackcloud.get_network_agents_status()
     cinderv3_services_down = openstackcloud.get_cinderv3_service_status()
     now = datetime.datetime.now()
-    Operations.objects.create()
+
     if len(compute_services_down) != 0:
         for item in compute_services_down:
             service = item['service']
             service_ip = item['ip']
             if service is 'openstack-nova-compute':
-                pass
+                if not len([i for i,_ in enumerate(compute_services_down) if _['service'] == 'openstack-nova-conductor']):
+                    Alarm.objects.create(ip=service_ip, type="OpenStack服务",
+                                         alarm_time=now, alarm_content="{}不可用".format(service), alarm_level="ERROR")
+                    vms = openstackcloud.get_servers_on_hypervisor(service_ip)
+                    logger.error(u"计算节点 {} 服务状态为down，开始执行疏散".format(service_ip))
+                    for vm in vms:
+                        openstackcloud.evacuate(vm)
+                        vm_ip = openstackcloud.get_ip_by_server_id(vm)
+                        if vm_ip is not None:
+                            logger.error(u"虚拟机 {} 已被疏散".format(vm_ip))
+                            vm_host = IpList.objects.filter(ip=vm_ip)[0]
+                            vm_host.last_reboot_time = now
+                            vm_host.save()
+                    last_alarm = Alarm.objects.filter(ip=service_ip, alarm_content="{}不可用".format(service)).last()
+                    last_alarm.recv_result = "疏散成功"
+                    last_alarm.recv_time = datetime.datetime.now()
+                    last_alarm.save()
+                script_content = base64.b64encode(
+                    "systemctl restart " + service
+                )
+                result, instance_id = get_job_instance_id(client, bk_biz_id, service_ip, script_content)
+                if result:
+                    logger.error(u"计算节点 {} 服务状态为down，已重启服务".format(service_ip))
+                else:
+                    logger.error(u"计算节点 {} 服务状态为down，重启服务失败".format(service_ip))
             else:
+                Alarm.objects.create(ip=service_ip, type="OpenStack服务",
+                                     alarm_time=now, alarm_content="{}不可用".format(service), alarm_level="ERROR")
                 script_content = base64.b64encode(
                     "systemctl restart " + service
                 )
                 result, instance_id = get_job_instance_id(client, bk_biz_id, service_ip, script_content)
                 if result:
                     logger.error(u"{}上的{}状态为down，重启服务".format(service_ip, service))
-                    Alarm.objects.create(ip=service_ip, type="OpenStack服务",
-                                         alarm_time=now, alarm_content="{}不可用".format(service), alarm_level="ERROR",
-                                         recv_time=now, recv_result="重启进程成功")
+                    check_service_recv.apply_async(args=[service_ip, service, "compute"], countdown=30)
+                else:
+                    last_alarm = Alarm.objects.filter(ip=service_ip, alarm_content="{}不可用".format(service)).last()
+                    last_alarm.recv_result = "自愈失败"
+                    last_alarm.recv_time = datetime.datetime.now()
+                    last_alarm.save()
+
     if len(network_agents_down) != 0:
         for item in network_agents_down:
             agent = item['agent']
             agent_ip = item['ip']
+            Alarm.objects.create(ip=agent_ip, type="OpenStack服务",
+                                 alarm_time=now, alarm_content="{}不可用".format(agent), alarm_level="ERROR")
+            logger.error(u"{}上的{}状态为down，准备重启代理".format(agent_ip, agent))
             script_content = base64.b64encode(
                 "systemctl restart " + agent
             )
             result, instance_id = get_job_instance_id(client, bk_biz_id, agent_ip, script_content)
             if result:
-                logger.error(u"{}上的{}状态为down，重启服务".format(agent_ip, agent))
-                Alarm.objects.create(ip=agent_ip, type="OpenStack服务",
-                                     alarm_time=now, alarm_content="{}不可用".format(agent), alarm_level="ERROR",
-                                     recv_time=now, recv_result="重启进程成功")
+                logger.error(u"{}上的{}状态为down，重启服务代理".format(agent_ip, agent))
+                check_service_recv.apply_async(args=[agent_ip, agent, "network"], countdown=30)
+            else:
+                last_alarm = Alarm.objects.filter(ip=agent_ip, alarm_content="{}不可用".format(agent)).last()
+                last_alarm.recv_result = "自愈失败"
+                last_alarm.recv_time = now
+                last_alarm.save()
+
     if len(cinderv3_services_down) != 0:
         for item in cinderv3_services_down:
             service = item['service']
             service_ip = item['ip']
+            Alarm.objects.create(ip=service_ip, type="OpenStack服务",
+                                 alarm_time=now, alarm_content="{}不可用".format(service), alarm_level="ERROR")
+            logger.error(u"{}上的{}状态为down，准备重启服务".format(service_ip, service))
             script_content = base64.b64encode(
                 "systemctl restart " + service
             )
             result, instance_id = get_job_instance_id(client, bk_biz_id, service_ip, script_content)
             if result:
-                logger.error(u"{}上的{}状态为down，重启服务".format(service_ip, service))
-                Alarm.objects.create(ip=service_ip, type="OpenStack服务",
-                                     alarm_time=now, alarm_content="{}不可用".format(service), alarm_level="ERROR",
-                                     recv_time=now, recv_result="重启进程成功")
+                logger.error(u"{}上的{}状态为down，重启服务成功".format(service_ip, service))
+                check_service_recv.apply_async(args=[service_ip, service, "cinder"], countdown=30)
+            else:
+                last_alarm = Alarm.objects.filter(ip=service_ip, alarm_content="{}不可用".format(service)).last()
+                last_alarm.recv_result = "自愈失败"
+                last_alarm.recv_time = datetime.datetime.now()
+                last_alarm.save()
+
+
+@task()
+def check_service_recv(ip, service, service_type):
+    last_alarm = Alarm.objects.filter(ip=ip, alarm_content="{}不可用".format(service)).last()
+    openstackcloud = OpenStackCloud()
+    if service_type is "compute":
+        compute_services_down = openstackcloud.get_compute_service_status()
+        if len([i for i, _ in enumerate(compute_services_down) if _['service'] == service and _['ip'] == ip]):
+            last_alarm.recv_result = "自愈失败"
+            logger.error(u"{}上的{}服务自愈失败".format(ip, service))
+        else:
+            last_alarm.recv_result = "自愈成功"
+            logger.error(u"{}上的{}服务自愈成功".format(ip, service))
+        last_alarm.recv_time = datetime.datetime.now()
+        last_alarm.save()
+    elif service_type is "network":
+        network_agents_down = openstackcloud.get_network_agents_status()
+        if len([i for i, _ in enumerate(network_agents_down) if _['agent'] == service and _['ip'] == ip]):
+            last_alarm.recv_result = "自愈失败"
+            logger.error(u"{}上的{}服务自愈失败".format(ip, service))
+        else:
+            last_alarm.recv_result = "自愈成功"
+            logger.error(u"{}上的{}服务自愈成功".format(ip, service))
+        last_alarm.recv_time = datetime.datetime.now()
+        last_alarm.save()
+    else:
+        cinderv3_services_down = openstackcloud.get_cinderv3_service_status()
+        if len([i for i, _ in enumerate(cinderv3_services_down) if _['service'] == service and _['ip'] == ip]):
+            last_alarm.recv_result = "自愈失败"
+            logger.error(u"{}上的{}服务自愈失败".format(ip, service))
+        else:
+            last_alarm.recv_result = "自愈成功"
+            logger.error(u"{}上的{}服务自愈成功".format(ip, service))
+        last_alarm.recv_time = datetime.datetime.now()
+        last_alarm.save()
 
 
 @periodic_task(run_every=crontab(minute='*/1', hour='*', day_of_week="*"))
@@ -200,7 +296,7 @@ def check_ip():
 
 
 @periodic_task(run_every=crontab(minute='*/1', hour='*', day_of_week="*"))
-def check_compute_service():
+def check_service():
     client = get_client_by_user('admin')
     execute_check_service.apply_async(args=[client, 4])
     now = datetime.datetime.now()
