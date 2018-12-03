@@ -22,4 +22,16 @@ def get_job_instance_id(client, biz_id, ip, script_content):
 
 
 def get_job_log_content(client, biz_id, job_instance_id):
-    return
+    args = {
+        'bk_biz_id': biz_id,
+        'job_instance_id': job_instance_id,
+    }
+    resp = client.job.get_job_instance_log(**args)
+    is_finished = False
+    log_content = ''
+    if resp.get('result'):
+        data = resp.get('data')[0]
+        if data.get('is_finished'):
+            is_finished = True
+            log_content = data['step_results'][0]['ip_logs'][0]['log_content']
+    return is_finished, log_content
