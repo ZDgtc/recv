@@ -67,58 +67,84 @@ def execute_check_ip_task():
             # 过滤相应主机的记录
             host = IpList.objects.filter(ip=ip)[0]
             if host.type == 'vm':
-                # 查询告警记录
-                alarm_records = Alarm.objects.filter(ip=host.ip)
-                # 若存在相应IP的告警记录，判断是否已进行过处理，已处理的重新创建告警，未处理的根据时间判断是否进行处理
-                if len(alarm_records) != 0:
-                    last_alarm = alarm_records.order_by('-id')[0]
-                    # 第一次处理告警
+                if host.ignore_seconds == 0:
                     if host.last_reboot_time is None:
-                        if (now - last_alarm.alarm_time).seconds > 600:
+                        Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now,
+                                             alarm_content="ping不可达", alarm_level="ERROR")
+                        res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
+                        if res:
+                            last_alarm = Alarm.objects.filter(ip=host.ip).last()
+                            last_alarm.recv_time = datetime.datetime.now()
+                            last_alarm.recv_result = "重启成功"
+                            last_alarm.save()
+                            host.last_reboot_time = datetime.datetime.now()
+                            host.save()
+                    elif (now - host.last_reboot_time).seconds > 180:
+                        Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now,
+                                             alarm_content="ping不可达", alarm_level="ERROR")
+                        res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
+                        if res:
+                            last_alarm = Alarm.objects.filter(ip=host.ip).last()
+                            last_alarm.recv_time = datetime.datetime.now()
+                            last_alarm.recv_result = "重启成功"
+                            last_alarm.save()
+                            host.last_reboot_time = datetime.datetime.now()
+                            host.save()
+                    else:
+                        logger.error(u"虚拟机 {} 重启期间ping不可达，收敛".format(ip))
+                else:
+                    # 查询告警记录
+                    alarm_records = Alarm.objects.filter(ip=host.ip)
+                    # 若存在相应IP的告警记录，判断是否已进行过处理，已处理的重新创建告警，未处理的根据时间判断是否进行处理
+                    if len(alarm_records) != 0:
+                        last_alarm = alarm_records.order_by('-id')[0]
+                        # 第一次处理告警
+                        if host.last_reboot_time is None:
+                            if (now - last_alarm.alarm_time).seconds > 600:
+                                Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now,
+                                                     alarm_content="ping不可达", alarm_level="ERROR")
+                            elif (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
+                                res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
+                                if res:
+                                    logger.error(u"虚拟机 {} 已重启".format(ip))
+                                host.last_reboot_time = now
+                                host.save()
+                                last_alarm.recv_time = now
+                                last_alarm.recv_result = '重启成功'
+                                last_alarm.save()
+                            else:
+                                logger.error(u"虚拟机 {} ping不可达时间间隔：{}".format(ip, (now - last_alarm.alarm_time).seconds))
+                        # 上一个告警已处理，创建告警
+                        elif last_alarm.recv_result == '重启成功':
+                            if (now - host.last_reboot_time).seconds < 180:
+                                logger.error(u"虚拟机 {} 重启期间ping不可达，收敛".format(ip))
+                            else:
+                                Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now,
+                                                     alarm_content="ping不可达", alarm_level="ERROR")
+                                logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
+                        # 上一个告警未处理且超过处理时限，创建新告警
+                        elif (now - last_alarm.alarm_time).seconds > 600:
                             Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now,
                                                  alarm_content="ping不可达", alarm_level="ERROR")
-                        elif (now - last_alarm.alarm_time).seconds > host.ignore_seconds:
+                        # 告警未处理且未超时，若告警超过容忍时间，执行重启
+                        elif (now - last_alarm.alarm_time).seconds > host.ignore_seconds and (now - host.last_reboot_time).seconds > 170:
+                            logger.error(u"虚拟机 {} ping不可达超过容忍时间，执行重启".format(ip))
                             res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
                             if res:
                                 logger.error(u"虚拟机 {} 已重启".format(ip))
                             host.last_reboot_time = now
                             host.save()
                             last_alarm.recv_time = now
-                            last_alarm.recv_result = '重启成功'
+                            last_alarm.recv_result = "重启成功"
                             last_alarm.save()
+                        # 告警未处理且未超时，若告警未超过容忍时间，执行重启
                         else:
-                            logger.error(u"虚拟机 {} ping不可达时间间隔：{}".format(ip, (now - last_alarm.alarm_time).seconds))
-                    # 上一个告警已处理，创建告警
-                    elif last_alarm.recv_result == '重启成功':
-                        if (now - host.last_reboot_time).seconds < 180:
-                            logger.error(u"虚拟机 {} 重启期间ping不可达，收敛".format(ip))
-                        else:
-                            Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now,
-                                                 alarm_content="ping不可达", alarm_level="ERROR")
-                            logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
-                    # 上一个告警未处理且超过处理时限，创建新告警
-                    elif (now - last_alarm.alarm_time).seconds > 600:
-                        Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now,
-                                             alarm_content="ping不可达", alarm_level="ERROR")
-                    # 告警未处理且未超时，若告警超过容忍时间，执行重启
-                    elif (now - last_alarm.alarm_time).seconds > host.ignore_seconds and (now - host.last_reboot_time).seconds > 170:
-                        logger.error(u"虚拟机 {} ping不可达超过容忍时间，执行重启".format(ip))
-                        res = openstackcloud.reboot_server(server_ip=ip, reboot_hard=True)
-                        if res:
-                            logger.error(u"虚拟机 {} 已重启".format(ip))
-                        host.last_reboot_time = now
-                        host.save()
-                        last_alarm.recv_time = now
-                        last_alarm.recv_result = "重启成功"
-                        last_alarm.save()
-                    # 告警未处理且未超时，若告警未超过容忍时间，执行重启
+                            logger.error(u"虚拟机 {} ping不可达未超过容忍时间，收敛".format(ip))
+                    # 无告警记录，创建记录
                     else:
-                        logger.error(u"虚拟机 {} ping不可达未超过容忍时间，收敛".format(ip))
-                # 无告警记录，创建记录
-                else:
-                    Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now, alarm_content="ping不可达",
-                                         alarm_level="ERROR")
-                    logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
+                        Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now, alarm_content="ping不可达",
+                                             alarm_level="ERROR")
+                        logger.error(u"虚拟机 {} ping不可达，已创建告警".format(ip))
             # 若为计算节点，做以下处理
             elif host.type == 'hypervisor':
                 logger.error(u"计算节点 {} ping不可达".format(ip))

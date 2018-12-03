@@ -30,7 +30,7 @@ def get_celery_record(request):
         data.append({'celery_opra_time': str(record.celery_opra_time), 'celery_opra_content': record.celery_opra_content})
     # #pdb.set_trace()
     # #print data
-    result = {"data":data}
+    result = {"data": data}
     return render_json(result)
 
 
@@ -93,3 +93,5 @@ def search(request):
     }
     return render_json(result)
 
+def upload(request):
+    pass
