@@ -35,4 +35,3 @@ class Operations(models.Model):
     celery_opra_time = models.DateTimeField()
     celery_opra_content = models.TextField()
 
-

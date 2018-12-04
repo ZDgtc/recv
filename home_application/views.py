@@ -42,10 +42,13 @@ def get_alarm_num(request):
     openstack_opera_num = Alarm.objects.filter(type__icontains="OpenStack",recv_time__isnull=False).count()
     openstack_recv_succeed_num = Alarm.objects.filter(type__icontains="OpenStack", recv_result__icontains="成功").count()
 
-    result = {"ceph_alarm_num": ceph_alarm_num, "ceph_opera_num": ceph_opera_num,
-              "ceph_recv_succeed_num": ceph_recv_succeed_num,
-              "openstack_alarm_num": openstack_alarm_num, "openstack_opera_num": openstack_opera_num,
-              "openstack_recv_succeed_num": openstack_recv_succeed_num}
+    result = {
+        "data": {"ceph_alarm_num": ceph_alarm_num, "ceph_opera_num": ceph_opera_num,
+                 "ceph_recv_succeed_num": ceph_recv_succeed_num,
+                 "openstack_alarm_num": openstack_alarm_num, "openstack_opera_num": openstack_opera_num,
+                 "openstack_recv_succeed_num": openstack_recv_succeed_num
+                 }
+    }
 
     return render_json(result)
 
@@ -56,6 +59,7 @@ def get_recv_records(request):
     for record in records:
         data.append(
             {
+                "id": record.id,
                 "type": record.type,
                 "alarm_time": record.alarm_time,
                 "alarm_content": record.alarm_content,
@@ -71,12 +75,12 @@ def get_recv_records(request):
 
 def search(request):
     data = []
-    alarm_type = request.GET.get('type', None)  # Ceph/OpenStack/None
+    alarm_type = request.GET.get('type')
     keyword = request.GET('keyword')
-    if alarm_type:
-        records = Alarm.objects.filter(type__contains=alarm_type, alarm_content__contains=keyword).order_by("-id")[:5]
-    else:
+    if alarm_type == 'all':
         records = Alarm.objects.all().order_by("-id")[:5]
+    else:
+        records = Alarm.objects.filter(type__contains=alarm_type, alarm_content__icontains=keyword).order_by("-id")[:5]
     for record in records:
         data.append(
             {
@@ -92,6 +96,7 @@ def search(request):
         "data": data
     }
     return render_json(result)
+
 
 def upload(request):
     pass

@@ -16,6 +16,6 @@ urlpatterns = patterns(
     (r'^$','index'),
     (r'^get_celery_record/$','get_celery_record'),
     (r'^alarm_num/$', 'get_alarm_num'),
-    (r'^recv_records/$', 'get_recv_records'),
+    (r'^get_recv_records/', 'get_recv_records'),
     (r'^search', 'search')
 )
