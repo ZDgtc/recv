@@ -55,13 +55,13 @@
                             </a>
                         </div>
                         <ul class="nav navbar-nav pull-left m0">
-                            <li><a href="${SITE_URL}">首页</a></li>
-                            <li class="active"><a href="${SITE_URL}alarm_page/">搜索</a></li>
+                            <li ng-click="returnIndex()"><a href="${SITE_URL}">首页</a></li>
+                            <li class="active"><a href="${SITE_URL}alarm_page/">查询记录</a></li>
                         </ul>
                         <div class="navbar-header pull-right">
                             <ul class="nav">
                                 <li class="user-info">
-                                    <a href="javascript:;">
+                                    <a href="${SITE_URL}admin/">
                                         <img class="img-rounded" src="https://magicbox.bk.tencent.com/static_api/v3/components/horizontal_nav1/images/avatar.png">
                                         <span>admin</span>
                                     </a>
@@ -118,7 +118,6 @@
             </div>
         </div>
     </div>
-    </div>
     <script>
         var app = angular.module('myApp', []);
         app.config(['$locationProvider', function ($locationProvider) {
@@ -137,14 +136,15 @@
                 $scope.keyword = $location.search().keyword;
             }
 
-            // 自愈结果对象(测试mock,正式环境删除)
-
+            $scope.returnIndex = function () {
+                window.location = '/';
+            }
 
             // 搜索函数
             $scope.doSearch = function () {
                 // alarm_num修改为相应的API
-                let dataUrl = 'search/?type=' + $scope.pType;
-                if ($scope.keyword.length > 0) {
+                var dataUrl = '${SITE_URL}search/?type=' + $scope.pType;
+                if ($scope.keyword) {
                     dataUrl += '&keyword=';
                     dataUrl += $scope.keyword;
                 }
@@ -192,7 +192,7 @@
                     first: '首页',
                     last: '尾页',
                     previous: '上一页',
-                    next: '下一页',
+                    next: '下一页'
                 }
             };
             $('#table2_demo1').dataTable({

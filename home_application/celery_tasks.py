@@ -115,7 +115,7 @@ def execute_check_ip_task():
                             else:
                                 logger.error(u"虚拟机 {} ping不可达时间间隔：{}".format(ip, (now - last_alarm.alarm_time).seconds))
                         # 上一个告警已处理，创建告警
-                        elif last_alarm.recv_result == '重启成功':
+                        elif last_alarm.recv_result == u'重启成功':
                             if (now - host.last_reboot_time).seconds < 180:
                                 logger.error(u"虚拟机 {} 重启期间ping不可达，收敛".format(ip))
                             else:
@@ -152,7 +152,7 @@ def execute_check_ip_task():
                 if len(alarm_records) != 0:
                     last_alarm = alarm_records.order_by('-id')[0]
                     # 上次告警已处理，重新创建告警
-                    if last_alarm.recv_result == '疏散成功':
+                    if last_alarm.recv_result == u'疏散成功':
                         Alarm.objects.create(ip=host.ip, type='OpenStack计算节点', alarm_time=now, alarm_content="ping不可达",
                                              alarm_level="ERROR")
                     # 上次告警未处理且超时，重新创建告警

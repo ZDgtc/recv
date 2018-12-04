@@ -23,7 +23,7 @@ def index(request):
 
 
 def get_celery_record(request):
-    records = Operations.objects.all()
+    records = Operations.objects.order_by('-id')[:5]
     print type(records)
     data = []
     for record in records:
