@@ -376,6 +376,7 @@ def check_service_recv(ip, service, service_type):
 @task()
 def check_api_status(ip, service):
     openstackcloud = OpenStackCloud()
+    logger.error(u"正在检查{}上的{}服务".format(ip, service))
     result = openstackcloud.test_service_api_status(service=service)
     last_alarm = Alarm.objects.filter(ip=ip, alarm_content__contains='{}-api服务不在线'.format(service)).last()
     if result:

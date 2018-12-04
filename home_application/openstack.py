@@ -299,8 +299,10 @@ class OpenStackCloud(object):
                 IpList.objects.create(ip=ip, type='vm', auto_reboot=True, ignore_seconds=100)
 
     def test_service_api_status(self, service):
-        suffix = "/extensions" if service == "cinderv3" else "/"
-        res = self.get_resp(service=service, suffix=suffix, method='get', isjson=False)
+        if service == 'cinderv3':
+            res = self.get_resp(service=service, suffix="/extensions", method='get', isjson=False)
+        else:
+            res = self.get_resp(service=service, suffix="/", method='get', isjson=False)
         if res.status_code == 200:
             return True
         else:
