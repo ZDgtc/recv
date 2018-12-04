@@ -299,6 +299,7 @@ class OpenStackCloud(object):
                 IpList.objects.create(ip=ip, type='vm', auto_reboot=True, ignore_seconds=100)
 
     def test_service_api_status(self, service):
+        print "准备检查{}服务".format(service)
         if service == 'cinderv3':
             res = self.get_resp(service=service, suffix="/extensions", method='get', isjson=False)
         else:

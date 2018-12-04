@@ -377,7 +377,7 @@ def check_service_recv(ip, service, service_type):
 def check_api_status(ip, service):
     openstackcloud = OpenStackCloud()
     logger.error(u"正在检查{}上的{}服务".format(ip, service))
-    result = openstackcloud.test_service_api_status(service=service)
+    result = openstackcloud.test_service_api_status(service)
     last_alarm = Alarm.objects.filter(ip=ip, alarm_content__contains='{}-api服务不在线'.format(service)).last()
     if result:
         last_alarm.recv_result = "自愈成功"
