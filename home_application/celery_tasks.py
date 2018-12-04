@@ -339,7 +339,7 @@ def execute_check_service(client, bk_biz_id):
 
 @task()
 def check_service_recv(ip, service, service_type):
-    last_alarm = Alarm.objects.filter(ip=ip, alarm_content_contains="{}不可用".format(service)).last()
+    last_alarm = Alarm.objects.filter(ip=ip, alarm_content__contains="{}不可用".format(service)).last()
     openstackcloud = OpenStackCloud()
     if service_type == "compute":
         compute_services_down = openstackcloud.get_compute_service_status()
