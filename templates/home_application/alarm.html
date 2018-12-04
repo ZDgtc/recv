@@ -55,7 +55,8 @@
                             </a>
                         </div>
                         <ul class="nav navbar-nav pull-left m0">
-                            <li class="active"><a href="index.html">首页</a></li>
+                            <li><a href="${SITE_URL}">首页</a></li>
+                            <li class="active"><a href="${SITE_URL}alarm_page/">搜索</a></li>
                         </ul>
                         <div class="navbar-header pull-right">
                             <ul class="nav">
@@ -85,7 +86,7 @@
                         type="text" maxlength="60" style="width: 230px" />
                     <a class="king-btn-demo king-btn king-radius king-primary" style="min-width: 50px; margin-left: -65px"
                         title="搜索" ng-click="doSearch()">
-                        <i class="fa fa-search btn-icon"></i>搜索
+                        <i class="fa fa-search btn-icon">搜索</i>
                     </a>
                 </div>
 
@@ -95,7 +96,7 @@
                 <table id="table2_demo1" class="table table-bordered table-hover">
                     <thead>
                         <tr>
-                            <th style="text-align: center">ID</th>
+                            <th style="text-align: center">IP</th>
                             <th style="text-align: center">平台类型</th>
                             <th style="text-align: center">告警发现时间</th>
                             <th style="text-align: center">告警内容</th>
@@ -105,7 +106,7 @@
                     </thead>
                     <tbody>
                         <tr ng-repeat="cureItem in cureRecords">
-                            <td class="p15" style="width:10%; text-align: center;">{{cureItem.id}}</td>
+                            <td class="p15" style="width:10%; text-align: center;">{{cureItem.ip}}</td>
                             <td style="width:10%; text-align: center;">{{cureItem.type}}</td>
                             <td style="width:20%;text-align: center;">{{cureItem.alarm_time}}</td>
                             <td style="width:30%;text-align: center;">{{cureItem.alarm_content}}</td>
@@ -137,19 +138,6 @@
             }
 
             // 自愈结果对象(测试mock,正式环境删除)
-            $scope.cureRecords = [{
-                alarm_id: "1",
-                alarm_detect_time: "2018/11/28 14:20",
-                alarm_content: "内存超过阀值",
-                alarm_deal_time: "2018/11/28 15:00",
-                alarm_dealed_result: "成功"
-            }, {
-                alarm_id: "1",
-                alarm_detect_time: "2018/11/28 14:20",
-                alarm_content: "内存超过阀值",
-                alarm_deal_time: "2018/11/28 15:00",
-                alarm_dealed_result: "成功"
-            }];
 
 
             // 搜索函数
@@ -173,7 +161,6 @@
 
             // 首页跳转进来执行搜索函数
             $scope.doSearch();
-
 
 
             /*定时器

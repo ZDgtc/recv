@@ -59,7 +59,7 @@ def get_recv_records(request):
     for record in records:
         data.append(
             {
-                "id": record.id,
+                "ip": record.ip,
                 "type": record.type,
                 "alarm_time": record.alarm_time.strftime('%Y-%m-%d %H:%M:%S'),
                 "alarm_content": record.alarm_content,
@@ -75,16 +75,16 @@ def get_recv_records(request):
 
 def search(request):
     data = []
-    alarm_type = request.GET.get('type')
-    keyword = request.GET('keyword')
-    if alarm_type == 'all':
+    alarm_type = request.GET.get('type', None)
+    keyword = request.GET.get('keyword', None)
+    if alarm_type == 'all' or keyword is None:
         records = Alarm.objects.all().order_by("-id")[:5]
     else:
         records = Alarm.objects.filter(type__contains=alarm_type, alarm_content__icontains=keyword).order_by("-id")[:5]
     for record in records:
         data.append(
             {
-                "id": record.id,
+                "ip": record.ip,
                 "type": record.type,
                 "alarm_time": record.alarm_time.strftime('%Y-%m-%d %H:%M:%S'),
                 "alarm_content": record.alarm_content,
@@ -98,5 +98,5 @@ def search(request):
     return render_json(result)
 
 
-def upload(request):
-    pass
+def alarm_page(request):
+    return render_mako_context(request, '/home_application/alarm.html')
