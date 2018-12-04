@@ -27,7 +27,7 @@ def get_celery_record(request):
     print type(records)
     data = []
     for record in records:
-        data.append({'celery_opra_time': str(record.celery_opra_time), 'celery_opra_content': record.celery_opra_content})
+        data.append({'celery_opra_time': record.celery_opra_time.strftime('%Y-%m-%d %H:%M:%S'), 'celery_opra_content': record.celery_opra_content})
     # #pdb.set_trace()
     # #print data
     result = {"data": data}
@@ -35,11 +35,11 @@ def get_celery_record(request):
 
 
 def get_alarm_num(request):
-    ceph_alarm_num = Alarm.objects.filter(type__icontains="CEPH",alarm_level='ERROR').count()
-    ceph_opera_num = Alarm.objects.filter(type__icontains="CEPH",recv_time__isnull=False).count()
-    ceph_recv_succeed_num = Alarm.objects.filter(type__icontains="CEPH",recv_result__icontains="成功").count()
-    openstack_alarm_num = Alarm.objects.filter(type__icontains="OpenStack",alarm_level='ERROR').count()
-    openstack_opera_num = Alarm.objects.filter(type__icontains="OpenStack",recv_time__isnull=False).count()
+    ceph_alarm_num = Alarm.objects.filter(type__icontains="CEPH", alarm_level='ERROR').count()
+    ceph_opera_num = Alarm.objects.filter(type__icontains="CEPH", recv_time__isnull=False).count()
+    ceph_recv_succeed_num = Alarm.objects.filter(type__icontains="CEPH", recv_result__icontains="成功").count()
+    openstack_alarm_num = Alarm.objects.filter(type__icontains="OpenStack", alarm_level='ERROR').count()
+    openstack_opera_num = Alarm.objects.filter(type__icontains="OpenStack", recv_time__isnull=False).count()
     openstack_recv_succeed_num = Alarm.objects.filter(type__icontains="OpenStack", recv_result__icontains="成功").count()
 
     result = {
@@ -61,9 +61,9 @@ def get_recv_records(request):
             {
                 "id": record.id,
                 "type": record.type,
-                "alarm_time": record.alarm_time,
+                "alarm_time": record.alarm_time.strftime('%Y-%m-%d %H:%M:%S'),
                 "alarm_content": record.alarm_content,
-                "recv_time": record.recv_time,
+                "recv_time": record.recv_time.strftime('%Y-%m-%d %H:%M:%S'),
                 "recv_result": record.recv_result
              }
         )
@@ -86,9 +86,9 @@ def search(request):
             {
                 "id": record.id,
                 "type": record.type,
-                "alarm_time": record.alarm_time,
+                "alarm_time": record.alarm_time.strftime('%Y-%m-%d %H:%M:%S'),
                 "alarm_content": record.alarm_content,
-                "recv_time": record.recv_time,
+                "recv_time": record.recv_time.strftime('%Y-%m-%d %H:%M:%S'),
                 "recv_result": record.recv_result
             }
         )

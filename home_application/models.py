@@ -14,7 +14,7 @@ from django.db import models
 
 class IpList(models.Model):
     ip = models.CharField(max_length=64)
-    type = models.CharField(max_length=10)
+    type = models.CharField(max_length=64)
     auto_reboot = models.BooleanField(blank=True)
     ignore_seconds = models.IntegerField(blank=True, null=True)
     last_reboot_time = models.DateTimeField(blank=True, null=True)
