@@ -31,7 +31,7 @@ class Alarm(models.Model):
 
 
 class Operations(models.Model):
-    ip = models.CharField(max_length=64)
+    ip = models.CharField(max_length=64, null=True, blank=True)
     celery_opra_time = models.DateTimeField()
     celery_opra_content = models.TextField()
 

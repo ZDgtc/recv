@@ -339,7 +339,7 @@ def execute_check_service(client, bk_biz_id):
 
 @task()
 def check_service_recv(ip, service, service_type):
-    last_alarm = Alarm.objects.filter(ip=ip, alarm_content="{}不可用".format(service)).last()
+    last_alarm = Alarm.objects.filter(ip=ip, alarm_content_contains="{}不可用".format(service)).last()
     openstackcloud = OpenStackCloud()
     if service_type == "compute":
         compute_services_down = openstackcloud.get_compute_service_status()
@@ -390,6 +390,7 @@ def check_api_status(ip, service):
 def check_ip():
     execute_check_ip_task.apply_async()
     now = datetime.datetime.now()
+    Operations.objects.create(celery_opra_time=now, celery_opra_content='检查ping状态')
     logger.error(u"开始调用check_ip周期任务，当前时间：{}".format(now))
 
 
@@ -398,10 +399,11 @@ def check_service():
     client = get_client_by_user('admin')
     execute_check_service.apply_async(args=[client, 4])
     now = datetime.datetime.now()
+    Operations.objects.create(celery_opra_time=now, celery_opra_content='检查服务状态')
     logger.error(u'开始调用check_service周期任务，当前时间：{}'.format(now))
 
 
-@periodic_task(run_every=crontab(minute='*/10', hour='*', day_of_week="*"))
+@periodic_task(run_every=crontab(minute='*/1', hour='*', day_of_week="*"))
 def add_ip():
     execute_add_ip.apply_async()
     now = datetime.datetime.now()
