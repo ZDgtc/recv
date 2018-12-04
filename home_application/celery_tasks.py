@@ -262,7 +262,7 @@ def execute_check_service(client, bk_biz_id):
             if result:
                 check_api_status.apply_async(args=[controller.ip, "nova"], countdown=30)
             else:
-                last_alarm = Alarm.objects.filter(ip=controller.ip, alarm_content="nova-api服务不在线").last()
+                last_alarm = Alarm.objects.filter(ip=controller.ip, alarm_content__contains="nova-api服务不在线").last()
                 last_alarm.recv_result = "自愈失败"
                 last_alarm.recv_time = datetime.datetime.now()
                 last_alarm.save()
@@ -295,7 +295,7 @@ def execute_check_service(client, bk_biz_id):
             if result:
                 check_api_status.apply_async(args=[controller.ip, "neutron"], countdown=30)
             else:
-                last_alarm = Alarm.objects.filter(ip=controller.ip, alarm_content="neutron-api服务不在线").last()
+                last_alarm = Alarm.objects.filter(ip=controller.ip, alarm_content__contains="neutron-api服务不在线").last()
                 last_alarm.recv_result = "自愈失败"
                 last_alarm.recv_time = datetime.datetime.now()
                 last_alarm.save()
@@ -328,7 +328,7 @@ def execute_check_service(client, bk_biz_id):
             if result:
                 check_api_status.apply_async(args=[controller.ip, "cinderv3"], countdown=30)
             else:
-                last_alarm = Alarm.objects.filter(ip=controller.ip, alarm_content="cinder-api服务不在线").last()
+                last_alarm = Alarm.objects.filter(ip=controller.ip, alarm_content__contains="cinder-api服务不在线").last()
                 last_alarm.recv_result = "自愈失败"
                 last_alarm.recv_time = datetime.datetime.now()
                 last_alarm.save()
