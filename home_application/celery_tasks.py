@@ -322,13 +322,13 @@ def execute_check_service(client, bk_biz_id):
                         last_alarm.save()
         else:
             Alarm.objects.create(ip=controller.ip, type="OpenStack控制节点", alarm_time=datetime.datetime.now(),
-                                 alarm_content="cinder-api服务不在线", alarm_level="ERROR")
+                                 alarm_content="cinderv3-api服务不在线", alarm_level="ERROR")
             script_content = base64.b64encode("systemctl restart openstack-cinder-api")
             result, instance_id = get_job_instance_id(client, bk_biz_id, controller.ip, script_content)
             if result:
                 check_api_status.apply_async(args=[controller.ip, "cinderv3"], countdown=30)
             else:
-                last_alarm = Alarm.objects.filter(ip=controller.ip, alarm_content__contains="cinder-api服务不在线").last()
+                last_alarm = Alarm.objects.filter(ip=controller.ip, alarm_content__contains="cinderv3-api服务不在线").last()
                 last_alarm.recv_result = "自愈失败"
                 last_alarm.recv_time = datetime.datetime.now()
                 last_alarm.save()
