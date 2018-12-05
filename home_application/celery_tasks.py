@@ -477,8 +477,8 @@ def get_osd_state():
         recv_time = datetime.datetime.now()
         recv_result = "成功"
 
-        # Alarm.objects.create(ip = ip,type = type, alarm_time = alarm_time, alarm_content = alarm_content, \
-                # alarm_level = alarm_level, recv_time = recv_time,recv_result = recv_result)
+        Alarm.objects.create(ip=ip, type=type, alarm_time=alarm_time, alarm_content=alarm_content,
+                             alarm_level=alarm_level, recv_time=recv_time, recv_result=recv_result)
 
 
 def recov_osd():
