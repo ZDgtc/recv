@@ -14,8 +14,10 @@ See the License for the specific language governing permissions and limitations 
 
 # import from lib
 # ===============================================================================
-# from django.contrib import admin
-# from apps.__.models import aaaa
+from django.contrib import admin
+from models import *
 #
-# admin.site.register(aaaa)
+admin.site.register(Alarm)
+admin.site.register(Operations)
+admin.site.register(IpList)
 # ===============================================================================
