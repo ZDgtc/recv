@@ -88,7 +88,7 @@ def search(request):
                 "type": record.type,
                 "alarm_time": record.alarm_time.strftime('%Y-%m-%d %H:%M:%S'),
                 "alarm_content": record.alarm_content,
-                "recv_time": record.recv_time.strftime('%Y-%m-%d %H:%M:%S'),
+                "recv_time": record.recv_time.strftime('%Y-%m-%d %H:%M:%S') if record.recv_time is not None else record.recv,
                 "recv_result": record.recv_result
             }
         )

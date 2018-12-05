@@ -573,12 +573,14 @@ def get_osd_usage():
             alarm_time = datetime.datetime.now()
             alarm_content = log_content
             alarm_level = "INFO"
-            Alarm.objects.create(ip = ip,type = type, alarm_time = alarm_time, alarm_content = alarm_content, alarm_level = alarm_level)
+
 
             usage_level = 90
             usage = usage_result[0] #filter(str.isdigit,usage_result[0].encode("utf-8"))
             print usage
             if float(usage) > usage_level:
+                Alarm.objects.create(ip=ip, type=type, alarm_time=alarm_time, alarm_content=alarm_content,
+                                     alarm_level=alarm_level)
                 new_osd()
         else:
             ip = "172.50.18.214"
