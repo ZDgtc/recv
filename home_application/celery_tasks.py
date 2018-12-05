@@ -66,7 +66,7 @@ def execute_check_ip_task():
         if 'unreachable' in tmp:
             # 过滤相应主机的记录
             host = IpList.objects.filter(ip=ip)[0]
-            if host.type == 'vm':
+            if host.type == 'vm' and host.auto_reboot is True:
                 if host.ignore_seconds == 0:
                     if host.last_reboot_time is None:
                         Alarm.objects.create(ip=host.ip, type='OpenStack虚拟机', alarm_time=now,
@@ -228,14 +228,8 @@ def execute_check_service(client, bk_biz_id):
                             last_alarm.recv_result = "疏散成功"
                             last_alarm.recv_time = datetime.datetime.now()
                             last_alarm.save()
-                            script_content = base64.b64encode(
-                                "systemctl restart " + service
-                            )
-                            result, instance_id = get_job_instance_id(client, bk_biz_id, service_ip, script_content)
-                            if result:
-                                logger.error(u"计算节点 {} 服务状态为down，已重启服务".format(service_ip))
-                            else:
-                                logger.error(u"计算节点 {} 服务状态为down，重启服务失败".format(service_ip))
+                            # 疏散后直接重启会出现bug
+                            restart_compute_service.apply_async(args=[client, service_ip], countdown=30)
                         else:
                             logger.error(u"nova-conductor服务状态为down，计算服务不可用".format(service_ip))
                     else:
@@ -385,6 +379,18 @@ def check_api_status(ip, service):
         last_alarm.recv_result = "自愈失败"
     last_alarm.recv_time = datetime.datetime.now()
     last_alarm.save()
+
+
+@task()
+def restart_compute_service(client, ip):
+    script_content = base64.b64encode(
+        "systemctl restart openstack-nova-compute"
+    )
+    result, instance_id = get_job_instance_id(client, 4, ip, script_content)
+    if result:
+        logger.error(u"计算节点 {} 服务状态为down，已重启服务".format(ip))
+    else:
+        logger.error(u"计算节点 {} 服务状态为down，重启服务失败".format(ip))
 
 
 @periodic_task(run_every=crontab(minute='*/1', hour='*', day_of_week="*"))
