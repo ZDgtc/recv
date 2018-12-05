@@ -54,7 +54,7 @@ def get_alarm_num(request):
 
 
 def get_recv_records(request):
-    records = Alarm.objects.filter(recv_time__isnull=False, recv_result__icontains="成功").reverse()[:5]
+    records = Alarm.objects.filter(recv_time__isnull=False, recv_result__icontains="成功").order_by('-id')[:10]
     data = []
     for record in records:
         data.append(
@@ -77,10 +77,16 @@ def search(request):
     data = []
     alarm_type = request.GET.get('type', None)
     keyword = request.GET.get('keyword', None)
-    if alarm_type == 'all' or keyword is None:
-        records = Alarm.objects.all().order_by("-id")[:5]
+    if alarm_type == 'all':
+        if keyword:
+            records = Alarm.objects.filter(alarm_content__icontains=keyword).order_by("-id")[:10]
+        else:
+            records = Alarm.objects.all().order_by('-id')[:10]
     else:
-        records = Alarm.objects.filter(type__contains=alarm_type, alarm_content__icontains=keyword).order_by("-id")[:5]
+        if keyword:
+            records = Alarm.objects.filter(type__contains=alarm_type, alarm_content__icontains=keyword).order_by("-id")[:10]
+        else:
+            records = Alarm.objects.filter(type__contains=alarm_type).order_by('-id')[:10]
     for record in records:
         data.append(
             {
