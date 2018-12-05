@@ -455,6 +455,8 @@ def get_osd_state():
     print log_content
     if "Down" in log_content:
         # set IP and set host
+        ip = '172.50.18.214'
+        type = 'CEPH'
         if "osd.1" in log_content or "osd.4" in log_content or "osd.5" in log_content :
             ip = "172.50.18.214"
             type = "CEPH-1"
@@ -476,9 +478,8 @@ def get_osd_state():
         recov_osd()
         recv_time = datetime.datetime.now()
         recv_result = "成功"
-
-        Alarm.objects.create(ip=ip, type=type, alarm_time=alarm_time, alarm_content=alarm_content,
-                             alarm_level=alarm_level, recv_time=recv_time, recv_result=recv_result)
+        Alarm.objects.create(ip = ip,type = type, alarm_time = alarm_time, alarm_content = alarm_content,
+                alarm_level = alarm_level, recv_time = recv_time,recv_result = recv_result)
 
 
 def recov_osd():

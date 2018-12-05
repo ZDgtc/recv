@@ -152,7 +152,7 @@
                     method: 'GET',
                     url: dataUrl
                 }).then(function successCallback(response) {
-                    $scope.cureRecords = response.data;
+                    $scope.cureRecords = response.data.data;
                 }, function errorCallback(response) {
                     // error code
                 });
