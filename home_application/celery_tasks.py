@@ -403,7 +403,7 @@ def check_ip():
 
 @periodic_task(run_every=crontab(minute='*/1', hour='*', day_of_week="*"))
 def check_service():
-    client = get_client_by_user('admin')
+    client = get_client_by_user('bk_four')
     execute_check_service.apply_async(args=[client, 6])
     now = datetime.datetime.now()
     Operations.objects.create(celery_opra_time=now, celery_opra_content='检查服务状态')
@@ -428,7 +428,7 @@ def get_osd_state():
     Operations.objects.create(ip = celery_ip,celery_opra_time = celery_opra_time, celery_opra_content = celery_opra_content)
 
     # 检测 osd 状态
-    user = "admin"
+    user = "bk_four"
     client = get_client_by_user(user)
     # 检测 OSD 状态的脚本ID 为 18
     job_kwargs = {
@@ -497,7 +497,7 @@ def recov_osd():
 
     # 开始 OSD 自愈操作， OSD 自愈的脚本id 为 17
     # 经过测试 OSD 自愈脚本运行时间 需要 35 秒
-    user = "admin"
+    user = "bk_four"
     client = get_client_by_user(user)
 
     job_recv_osd_kwargs = {
@@ -536,7 +536,7 @@ def get_osd_usage():
     Operations.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
 
     # 检测 osd 状态
-    user = "admin"
+    user = "bk_four"
     client = get_client_by_user(user)
     #检测 OSD 使用率的脚本为 19
     job_kwargs = {
@@ -605,7 +605,7 @@ def new_osd():
     Operations.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
 
     # 开始 OSD 扩容操作
-    user = "admin"
+    user = "bk_four"
     client = get_client_by_user(user)
     # OSD扩容的脚本id 为 22
     job_recv_osd_kwargs = {
@@ -643,7 +643,7 @@ def get_mon_state():
     Operations.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
 
     # 检测 MON 状态
-    user = "admin"
+    user = "bk_four"
     client = get_client_by_user(user)
     # 检测 MON 状态的脚本为 20
     job_kwargs = {
@@ -710,7 +710,7 @@ def recov_mon():
     Operations.objects.create(ip=celery_ip, celery_opra_time=celery_opra_time, celery_opra_content=celery_opra_content)
 
     # 开始 MON 自愈操作
-    user = "admin"
+    user = "bk_four"
     client = get_client_by_user(user)
     # MON 自愈的脚本id 为 21
     job_recv_osd_kwargs = {
