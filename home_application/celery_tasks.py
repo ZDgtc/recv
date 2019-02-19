@@ -386,7 +386,7 @@ def restart_compute_service(client, ip):
     script_content = base64.b64encode(
         "systemctl restart openstack-nova-compute"
     )
-    result, instance_id = get_job_instance_id(client, 4, ip, script_content)
+    result, instance_id = get_job_instance_id(client, 6, ip, script_content)
     if result:
         logger.error(u"计算节点 {} 服务状态为down，已重启服务".format(ip))
     else:
@@ -404,7 +404,7 @@ def check_ip():
 @periodic_task(run_every=crontab(minute='*/1', hour='*', day_of_week="*"))
 def check_service():
     client = get_client_by_user('admin')
-    execute_check_service.apply_async(args=[client, 4])
+    execute_check_service.apply_async(args=[client, 6])
     now = datetime.datetime.now()
     Operations.objects.create(celery_opra_time=now, celery_opra_content='检查服务状态')
     logger.error(u'开始调用check_service周期任务，当前时间：{}'.format(now))
@@ -432,8 +432,8 @@ def get_osd_state():
     client = get_client_by_user(user)
     # 检测 OSD 状态的脚本ID 为 18
     job_kwargs = {
-        "bk_biz_id": 3,
-        "script_id": 18,
+        "bk_biz_id": 6,
+        "script_id": 9,
         "script_timeout": 1000,
         "account": "root",
         "is_param_sensitive": 0,
@@ -450,7 +450,7 @@ def get_osd_state():
     job_instance_id = fast_job_excute_resutl["data"]["job_instance_id"]
     time.sleep(5)
     log_kwargs = {
-        "bk_biz_id": 3,  # http://job.blueking.com/?scriptList&appId=3
+        "bk_biz_id": 6,  # http://job.blueking.com/?scriptList&appId=3
         "job_instance_id": job_instance_id,  # 脚本管理 里 有个 3
     }
 
@@ -501,8 +501,8 @@ def recov_osd():
     client = get_client_by_user(user)
 
     job_recv_osd_kwargs = {
-        "bk_biz_id": 3,
-        "script_id": 17,
+        "bk_biz_id": 6,
+        "script_id": 11,
         "script_timeout": 1000,
         "account": "root",
         "is_param_sensitive": 0,
@@ -540,8 +540,8 @@ def get_osd_usage():
     client = get_client_by_user(user)
     #检测 OSD 使用率的脚本为 19
     job_kwargs = {
-        "bk_biz_id": 3,
-        "script_id": 19,
+        "bk_biz_id": 6,
+        "script_id": 10,
         "script_timeout": 1000,
         "account": "root",
         "is_param_sensitive": 0,
@@ -558,7 +558,7 @@ def get_osd_usage():
     job_instance_id = fast_job_excute_resutl["data"]["job_instance_id"]
     time.sleep(5)
     log_kwargs = {
-        "bk_biz_id": 3,  # http://job.blueking.com/?scriptList&appId=3
+        "bk_biz_id": 6,  # http://job.blueking.com/?scriptList&appId=3
         "job_instance_id": job_instance_id,  # 脚本管理 里 有个 3
     }
 
@@ -609,8 +609,8 @@ def new_osd():
     client = get_client_by_user(user)
     # OSD扩容的脚本id 为 22
     job_recv_osd_kwargs = {
-        "bk_biz_id": 3,
-        "script_id": 22,
+        "bk_biz_id": 6,
+        "script_id": 6,
         "script_timeout": 1000,
         "account": "root",
         "is_param_sensitive": 0,
@@ -647,8 +647,8 @@ def get_mon_state():
     client = get_client_by_user(user)
     # 检测 MON 状态的脚本为 20
     job_kwargs = {
-        "bk_biz_id": 3,
-        "script_id": 20,
+        "bk_biz_id": 6,
+        "script_id": 7,
         "script_timeout": 1000,
         "account": "root",
         "is_param_sensitive": 0,
@@ -665,7 +665,7 @@ def get_mon_state():
     job_instance_id = fast_job_excute_resutl["data"]["job_instance_id"]
     time.sleep(5)
     log_kwargs = {
-        "bk_biz_id": 3,  # http://job.blueking.com/?scriptList&appId=3
+        "bk_biz_id": 6,  # http://job.blueking.com/?scriptList&appId=3
         "job_instance_id": job_instance_id,  # 脚本管理 里 有个 3
     }
 
@@ -714,8 +714,8 @@ def recov_mon():
     client = get_client_by_user(user)
     # MON 自愈的脚本id 为 21
     job_recv_osd_kwargs = {
-        "bk_biz_id": 3,
-        "script_id": 21,
+        "bk_biz_id": 6,
+        "script_id": 8,
         "script_timeout": 1000,
         "account": "root",
         "is_param_sensitive": 0,
