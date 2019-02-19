@@ -83,15 +83,15 @@
                                                 <div class="list-justified-container">
                                                     <ul class="list-justified text-center">
                                                         <li>
-                                                            <p class="f24" style="color: red">{{ alarmNums.openstack_alarm_num }}</p>
+                                                            <p class="f24" style="color: red" ng-cloak>{{ alarmNums.openstack_alarm_num }}</p>
                                                             <p><i class="fa fa-warning" style="color:red"></i>告警数</p>
                                                         </li>
                                                         <li>
-                                                            <p class="f24" style="color: orange">{{ alarmNums.openstack_opera_num }}</p>
+                                                            <p class="f24" style="color: orange" ng-cloak>{{ alarmNums.openstack_opera_num }}</p>
                                                             <p><i class="fa fa-bolt" style="color:orange"></i>已处理</p>
                                                         </li>
                                                         <li>
-                                                            <p class="f24" style="color:green">{{ alarmNums.openstack_recv_succeed_num }}</p>
+                                                            <p class="f24" style="color:green" ng-cloak>{{ alarmNums.openstack_recv_succeed_num }}</p>
                                                             <p><i class="fa fa-check" style="color:green"></i>已自愈</p>
                                                         </li>
                                                     </ul>
@@ -108,15 +108,15 @@
                                                 <div class="list-justified-container">
                                                     <ul class="list-justified text-center">
                                                         <li>
-                                                            <p class="f24">{{ alarmNums.ceph_alarm_num }}</p>
+                                                            <p class="f24" ng-cloak>{{ alarmNums.ceph_alarm_num }}</p>
                                                             <p><i class="fa fa-warning" style="color:red"></i>告警数</p>
                                                         </li>
                                                         <li>
-                                                            <p class="f24">{{ alarmNums.ceph_opera_num }}</p>
+                                                            <p class="f24" ng-cloak>{{ alarmNums.ceph_opera_num }}</p>
                                                             <p><i class="fa fa-bolt" style="color:orange"></i>已处理</p>
                                                         </li>
                                                         <li>
-                                                            <p class="f24">{{ alarmNums.ceph_recv_succeed_num }}</p>
+                                                            <p class="f24" ng-cloak>{{ alarmNums.ceph_recv_succeed_num }}</p>
                                                             <p><i class="fa fa-check" style="color:green"></i>已自愈</p>
                                                         </li>
                                                     </ul>
@@ -148,12 +148,12 @@
                                                     </thead>
                                                     <tbody>
                                                         <tr ng-repeat="cureItem in cureRecords">
-                                                            <td class="p15" style="width:10%;">{{cureItem.ip}}</td>
-                                                            <td style="width: 10%">{{cureItem.type}}</td>
-                                                            <td style="width:20%;">{{cureItem.alarm_time}}</td>
-                                                            <td style="width:30%;">{{cureItem.alarm_content}}</td>
-                                                            <td style="width:20%;">{{cureItem.recv_time}}</td>
-                                                            <td style="width:10%;">{{cureItem.recv_result}}</td>
+                                                            <td class="p15" style="width:10%;" ng-cloak>{{cureItem.ip}}</td>
+                                                            <td style="width: 10%" ng-cloak>{{cureItem.type}}</td>
+                                                            <td style="width:20%;" ng-cloak>{{cureItem.alarm_time}}</td>
+                                                            <td style="width:30%;" ng-cloak>{{cureItem.alarm_content}}</td>
+                                                            <td style="width:20%;" ng-cloak>{{cureItem.recv_time}}</td>
+                                                            <td style="width:10%;" ng-cloak>{{cureItem.recv_result}}</td>
                                                         </tr>
 
                                                     </tbody>
@@ -181,9 +181,9 @@
                                                 <div class="list-justified-container">
                                                     <ul class="king-timeline-simple" ng-repeat="lineItem in timeLines">
                                                         <li class="{{lineItem.type}}" style="list-style: none">
-                                                            <div class="timeline-simple-wrap">
+                                                            <div class="timeline-simple-wrap" ng-cloak>
                                                                 {{lineItem.celery_opra_content}}
-                                                                <span class="timeline-simple-date">{{lineItem.celery_opra_time}}</span>
+                                                                <span class="timeline-simple-date" ng-cloak>{{lineItem.celery_opra_time}}</span>
                                                             </div>
                                                         </li>
                                                     </ul>
