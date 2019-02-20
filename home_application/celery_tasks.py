@@ -188,20 +188,6 @@ def execute_check_ip_task():
 def execute_check_service(client, bk_biz_id):
     openstackcloud = OpenStackCloud()
     controller = IpList.objects.filter(type='controller')[0]
-    hypervisors = IpList.objects.filter(type='hypervisor')
-
-    if os.path.exists('/data/recv/hypervisor_iplist.txt'):
-        os.remove('/data/recv/hypervisor_iplist.txt')
-
-    with open('/data/recv/hypervisor_iplist.txt','a') as f:
-        for ip in hypervisors:
-            f.write(ip.ip + '\n')
-
-    p = subprocess.Popen(r'/data/recv/fping_hypervisor.sh', stdout=subprocess.PIPE)
-    p.stdout.read()
-
-    result = open('/data/recv/hypervisor_ping_result.txt', 'r')
-    content = result.read().split('\n')
 
     script_content = base64.b64encode("""
     #!/bin/bash
@@ -295,12 +281,6 @@ def execute_check_service(client, bk_biz_id):
                     else:
                         last_alarm = Alarm.objects.filter(ip=agent_ip, alarm_content="{}不可用".format(agent)).last()
                         last_alarm.recv_result = "自愈失败"
-                        for i in range(len(content) - 1):
-                            tmp = content[i]
-                            ip = tmp[:tmp.index('is') - 1]
-                            if 'unreachable' in tmp and ip == agent_ip:
-                                last_alarm.recv_result = "目的主机不在线，无法执行自愈"
-
                         last_alarm.recv_time = datetime.datetime.now()
                         last_alarm.save()
         else:
@@ -334,11 +314,6 @@ def execute_check_service(client, bk_biz_id):
                     else:
                         last_alarm = Alarm.objects.filter(ip=service_ip, alarm_content="{}不可用".format(service)).last()
                         last_alarm.recv_result = "自愈失败"
-                        for i in range(len(content) - 1):
-                            tmp = content[i]
-                            ip = tmp[:tmp.index('is') - 1]
-                            if 'unreachable' in tmp and ip == service_ip:
-                                last_alarm.recv_result = "目的主机不在线，无法执行自愈"
                         last_alarm.recv_time = datetime.datetime.now()
                         last_alarm.save()
         else:
