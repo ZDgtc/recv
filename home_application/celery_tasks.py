@@ -188,6 +188,21 @@ def execute_check_ip_task():
 def execute_check_service(client, bk_biz_id):
     openstackcloud = OpenStackCloud()
     controller = IpList.objects.filter(type='controller')[0]
+    hypervisors = IpList.objects.filter(type='hypervisor')
+
+    if os.path.exists('/data/recv/hypervisor_iplist.txt'):
+        os.remove('/data/recv/hypervisor_iplist.txt')
+
+    with open('/data/recv/hypervisor_iplist.txt','a') as f:
+        for ip in hypervisors:
+            f.write(ip.ip + '\n')
+
+    p = subprocess.Popen(r'/data/recv/fping_hypervisor.sh', stdout=subprocess.PIPE)
+    p.stdout.read()
+
+    result = open('/data/recv/hypervisor_ping_result.txt', 'r')
+    content = result.read().split('\n')
+
     script_content = base64.b64encode("""
     #!/bin/bash
     systemctl is-active openstack-nova-api
@@ -202,64 +217,65 @@ def execute_check_service(client, bk_biz_id):
                 break
             time.sleep(1)
         logs = log_content.strip("\n").split("\n")
-        if logs[0].encode() == 'active':
-            compute_services_down = openstackcloud.get_compute_service_status()
-            if len(compute_services_down) != 0:
-                for item in compute_services_down:
-                    service = item['service']
-                    service_ip = item['ip']
-                    if service == 'openstack-nova-compute':
-                        if not len([i for i, _ in enumerate(compute_services_down) if
-                                    _['service'] == 'openstack-nova-conductor']):
-                            Alarm.objects.create(ip=service_ip, type="OpenStack服务", alarm_time=datetime.datetime.now(),
-                                                 alarm_content="{}不可用".format(service), alarm_level="ERROR")
-                            vms = openstackcloud.get_servers_on_hypervisor(service_ip)
-                            logger.error(u"计算节点 {} 服务状态为down，开始执行疏散".format(service_ip))
-                            for vm in vms:
-                                openstackcloud.evacuate(vm)
-                                vm_ip = openstackcloud.get_ip_by_server_id(vm)
-                                if vm_ip is not None:
-                                    logger.error(u"虚拟机 {} 已被疏散".format(vm_ip))
-                                    vm_host = IpList.objects.filter(ip=vm_ip)[0]
-                                    vm_host.last_reboot_time = datetime.datetime.now()
-                                    vm_host.save()
-                            last_alarm = Alarm.objects.filter(ip=service_ip,
-                                                              alarm_content="{}不可用".format(service)).last()
-                            last_alarm.recv_result = "疏散成功"
-                            last_alarm.recv_time = datetime.datetime.now()
-                            last_alarm.save()
-                            # 疏散后直接重启会出现bug
-                            restart_compute_service.apply_async(args=[client, service_ip], countdown=30)
-                        else:
-                            logger.error(u"nova-conductor服务状态为down，计算服务不可用".format(service_ip))
-                    else:
-                        Alarm.objects.create(ip=service_ip, type="OpenStack服务",
-                                             alarm_time=datetime.datetime.now(), alarm_content="{}不可用".format(service), alarm_level="ERROR")
-                        script_content = base64.b64encode(
-                            "systemctl restart " + service
-                        )
-                        result, instance_id = get_job_instance_id(client, bk_biz_id, service_ip, script_content)
-                        if result:
-                            logger.error(u"{}上的{}状态为down，重启服务".format(service_ip, service))
-                            check_service_recv.apply_async(args=[service_ip, service, "compute"], countdown=30)
-                        else:
-                            last_alarm = Alarm.objects.filter(ip=service_ip,
-                                                              alarm_content="{}不可用".format(service)).last()
-                            last_alarm.recv_result = "自愈失败"
-                            last_alarm.recv_time = datetime.datetime.now()
-                            last_alarm.save()
-        else:
-            Alarm.objects.create(ip=controller.ip, type="OpenStack控制节点", alarm_time=datetime.datetime.now(),
-                                 alarm_content="nova-api服务不在线", alarm_level="ERROR")
-            script_content = base64.b64encode("systemctl restart openstack-nova-api")
-            result, instance_id = get_job_instance_id(client, bk_biz_id, controller.ip, script_content)
-            if result:
-                check_api_status.apply_async(args=[controller.ip, "nova"], countdown=30)
-            else:
-                last_alarm = Alarm.objects.filter(ip=controller.ip, alarm_content__contains="nova-api服务不在线").last()
-                last_alarm.recv_result = "自愈失败"
-                last_alarm.recv_time = datetime.datetime.now()
-                last_alarm.save()
+        # if logs[0].encode() == 'active':
+        #     compute_services_down = openstackcloud.get_compute_service_status()
+        #     if len(compute_services_down) != 0:
+        #         for item in compute_services_down:
+        #             service = item['service']
+        #             service_ip = item['ip']
+        #             if service == 'openstack-nova-compute':
+        #                 if not len([i for i, _ in enumerate(compute_services_down) if
+        #                             _['service'] == 'openstack-nova-conductor']):
+        #                     Alarm.objects.create(ip=service_ip, type="OpenStack服务", alarm_time=datetime.datetime.now(),
+        #                                          alarm_content="{}不可用".format(service), alarm_level="ERROR")
+        #
+        #                     vms = openstackcloud.get_servers_on_hypervisor(service_ip)
+        #                     logger.error(u"计算节点 {} 服务状态为down，开始执行疏散".format(service_ip))
+        #                     for vm in vms:
+        #                         openstackcloud.evacuate(vm)
+        #                         vm_ip = openstackcloud.get_ip_by_server_id(vm)
+        #                         if vm_ip is not None:
+        #                             logger.error(u"虚拟机 {} 已被疏散".format(vm_ip))
+        #                             vm_host = IpList.objects.filter(ip=vm_ip)[0]
+        #                             vm_host.last_reboot_time = datetime.datetime.now()
+        #                             vm_host.save()
+        #                     last_alarm = Alarm.objects.filter(ip=service_ip,
+        #                                                       alarm_content="{}不可用".format(service)).last()
+        #                     last_alarm.recv_result = "疏散成功"
+        #                     last_alarm.recv_time = datetime.datetime.now()
+        #                     last_alarm.save()
+        #                     # 疏散后直接重启会出现bug
+        #                     restart_compute_service.apply_async(args=[client, service_ip], countdown=30)
+        #                 else:
+        #                     logger.error(u"nova-conductor服务状态为down，计算服务不可用".format(service_ip))
+        #             else:
+        #                 Alarm.objects.create(ip=service_ip, type="OpenStack服务",
+        #                                      alarm_time=datetime.datetime.now(), alarm_content="{}不可用".format(service), alarm_level="ERROR")
+        #                 script_content = base64.b64encode(
+        #                     "systemctl restart " + service
+        #                 )
+        #                 result, instance_id = get_job_instance_id(client, bk_biz_id, service_ip, script_content)
+        #                 if result:
+        #                     logger.error(u"{}上的{}状态为down，重启服务".format(service_ip, service))
+        #                     check_service_recv.apply_async(args=[service_ip, service, "compute"], countdown=30)
+        #                 else:
+        #                     last_alarm = Alarm.objects.filter(ip=service_ip,
+        #                                                       alarm_content="{}不可用".format(service)).last()
+        #                     last_alarm.recv_result = "自愈失败"
+        #                     last_alarm.recv_time = datetime.datetime.now()
+        #                     last_alarm.save()
+        # else:
+        #     Alarm.objects.create(ip=controller.ip, type="OpenStack控制节点", alarm_time=datetime.datetime.now(),
+        #                          alarm_content="nova-api服务不在线", alarm_level="ERROR")
+        #     script_content = base64.b64encode("systemctl restart openstack-nova-api")
+        #     result, instance_id = get_job_instance_id(client, bk_biz_id, controller.ip, script_content)
+        #     if result:
+        #         check_api_status.apply_async(args=[controller.ip, "nova"], countdown=30)
+        #     else:
+        #         last_alarm = Alarm.objects.filter(ip=controller.ip, alarm_content__contains="nova-api服务不在线").last()
+        #         last_alarm.recv_result = "自愈失败"
+        #         last_alarm.recv_time = datetime.datetime.now()
+        #         last_alarm.save()
         if logs[1].encode() == 'active':
             network_agents_down = openstackcloud.get_network_agents_status()
             if len(network_agents_down) != 0:
@@ -268,7 +284,7 @@ def execute_check_service(client, bk_biz_id):
                     agent_ip = item['ip']
                     Alarm.objects.create(ip=agent_ip, type="OpenStack服务", alarm_time=datetime.datetime.now(),
                                          alarm_content="{}不可用".format(agent), alarm_level="ERROR")
-                    logger.error(u"{}上的{}状态为down，准备重启代理".format(agent_ip, agent))
+                    logger.error(u"{}上的{}状态为down，尝试重启代理".format(agent_ip, agent))
                     script_content = base64.b64encode(
                         "systemctl restart " + agent
                     )
@@ -279,6 +295,12 @@ def execute_check_service(client, bk_biz_id):
                     else:
                         last_alarm = Alarm.objects.filter(ip=agent_ip, alarm_content="{}不可用".format(agent)).last()
                         last_alarm.recv_result = "自愈失败"
+                        for i in range(len(content) - 1):
+                            tmp = content[i]
+                            ip = tmp[:tmp.index('is') - 1]
+                            if 'unreachable' in tmp and ip == agent_ip:
+                                last_alarm.recv_result = "目的主机不在线，无法执行自愈"
+
                         last_alarm.recv_time = datetime.datetime.now()
                         last_alarm.save()
         else:
@@ -301,7 +323,7 @@ def execute_check_service(client, bk_biz_id):
                     service_ip = item['ip']
                     Alarm.objects.create(ip=service_ip, type="OpenStack服务", alarm_time=datetime.datetime.now(),
                                          alarm_content="{}不可用".format(service), alarm_level="ERROR")
-                    logger.error(u"{}上的{}状态为down，准备重启服务".format(service_ip, service))
+                    logger.error(u"{}上的{}状态为down，尝试重启服务".format(service_ip, service))
                     script_content = base64.b64encode(
                         "systemctl restart " + service
                     )
@@ -312,6 +334,11 @@ def execute_check_service(client, bk_biz_id):
                     else:
                         last_alarm = Alarm.objects.filter(ip=service_ip, alarm_content="{}不可用".format(service)).last()
                         last_alarm.recv_result = "自愈失败"
+                        for i in range(len(content) - 1):
+                            tmp = content[i]
+                            ip = tmp[:tmp.index('is') - 1]
+                            if 'unreachable' in tmp and ip == service_ip:
+                                last_alarm.recv_result = "目的主机不在线，无法执行自愈"
                         last_alarm.recv_time = datetime.datetime.now()
                         last_alarm.save()
         else:
